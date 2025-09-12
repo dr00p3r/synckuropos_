@@ -1,0 +1,46 @@
+export const userSchema = {
+    keyCompression: true,
+    version: 0,
+    title: 'Users Schema in RxDB',
+    primaryKey: 'userId',
+    type: 'object',
+    properties: {
+        userId: {
+            type: 'string',
+            maxLength: 32
+        },
+        username: {
+            type: 'string',
+            maxLength: 50
+        },
+        passwordHash: {
+            type: 'string'
+        },
+        role: {
+            type: 'string',
+            enum: ['admin', 'cajero']
+        },
+        isActive: {
+            type: 'boolean',
+            default: true
+        },
+        createdAt: {
+            type: 'string',
+            format: 'date-time'
+        },
+        updatedAt: {
+            type: 'string',
+            format: 'date-time'
+        }
+    },
+    required: [
+        'userId',
+        'username',
+        'passwordHash',
+        'role',
+        'isActive',
+        'createdAt',
+        'updatedAt'
+    ],
+    indexes: ['username', 'role', 'isActive']
+};

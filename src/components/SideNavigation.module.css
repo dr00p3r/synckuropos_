@@ -1,0 +1,282 @@
+/* Variables CSS para colores */
+:root {
+  --sidebar-bg: #2A423E;
+  --sidebar-active-bg: #547771;
+  --sidebar-text: #F0EFE7;
+  --sidebar-hover: rgba(84, 119, 113, 0.5);
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --transition-duration: 0.3s;
+}
+
+/* Botón hamburguesa (solo móvil) */
+.hamburgerButton {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1001;
+  background: var(--sidebar-bg);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-duration) ease;
+}
+
+.hamburgerButton:hover {
+  transform: scale(1.05);
+}
+
+.hamburgerButton:active {
+  transform: scale(0.95);
+}
+
+.hamburgerLine {
+  width: 20px;
+  height: 2px;
+  background-color: var(--sidebar-text);
+  border-radius: 1px;
+  transition: all var(--transition-duration) ease;
+}
+
+/* Overlay para móvil */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--overlay-bg);
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
+/* Contenedor principal del menú lateral */
+.sideNav {
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Versión desktop */
+.sideNavDesktop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 100vh;
+  z-index: 100;
+}
+
+/* Versión móvil (cerrado) */
+.sideNavMobile {
+  position: fixed;
+  top: 0;
+  right: -60%;
+  width: 60%;
+  height: 100vh;
+  z-index: 1000;
+  transition: right var(--transition-duration) ease-in-out;
+}
+
+/* Versión móvil (abierto) */
+.sideNavMobileOpen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 60%;
+  height: 100vh;
+  z-index: 1000;
+  transition: right var(--transition-duration) ease-in-out;
+}
+
+/* Botón de cerrar (solo móvil) */
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color var(--transition-duration) ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  background-color: var(--sidebar-hover);
+}
+
+/* Lista de opciones del menú */
+.menuList {
+  list-style: none;
+  padding: 20px;
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menuItem {
+  margin: 0;
+}
+
+/* Opciones individuales del menú */
+.menuOption {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  padding: 16px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all var(--transition-duration) ease;
+  text-align: left;
+}
+
+.menuOption:hover {
+  background-color: var(--sidebar-hover);
+  transform: translateX(-4px);
+}
+
+.menuOption:active {
+  transform: translateX(-2px);
+}
+
+/* Opción activa */
+.menuOptionActive {
+  background-color: var(--sidebar-active-bg) !important;
+  font-weight: 600;
+  box-shadow: inset 4px 0 0 var(--sidebar-text);
+}
+
+.menuOptionActive:hover {
+  background-color: var(--sidebar-active-bg) !important;
+}
+
+/* Iconos del menú */
+.menuIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+/* Etiquetas del menú */
+.menuLabel {
+  flex: 1;
+  text-align: left;
+}
+
+/* Contenedor del botón de ajustes */
+.settingsContainer {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid rgba(240, 239, 231, 0.1);
+  margin-top: auto;
+}
+
+/* Botón de ajustes específico */
+.settingsOption {
+  margin-top: 16px;
+}
+
+/* Media queries para ajustes responsive */
+@media (max-width: 768px) {
+  .hamburgerButton {
+    display: flex;
+  }
+  
+  .menuOption {
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+  
+  .menuIcon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .menuList {
+    padding: 60px 20px 20px 20px; /* Espacio extra arriba para el botón de cerrar */
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburgerButton {
+    display: none;
+  }
+  
+  .closeButton {
+    display: none;
+  }
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Focus states para accesibilidad */
+.menuOption:focus,
+.hamburgerButton:focus,
+.closeButton:focus {
+  outline: 2px solid var(--sidebar-text);
+  outline-offset: 2px;
+}
+
+/* Estados adicionales para mejor UX */
+.menuOption:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuOption:disabled:hover {
+  background: none;
+  transform: none;
+}
+
+/* Animación suave para el contenido principal cuando el menú se abre/cierra */
+@media (max-width: 768px) {
+  body:has(.sideNavMobileOpen) {
+    overflow: hidden;
+  }
+}
+
+/* Efectos de entrada para las opciones del menú */
+.menuItem {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
+
+.menuItem:nth-child(1) { animation-delay: 0.1s; }
+.menuItem:nth-child(2) { animation-delay: 0.15s; }
+.menuItem:nth-child(3) { animation-delay: 0.2s; }
+.menuItem:nth-child(4) { animation-delay: 0.25s; }
+.menuItem:nth-child(5) { animation-delay: 0.3s; }
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
