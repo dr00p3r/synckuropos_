@@ -7,10 +7,11 @@ export const comboProductSchema = {
     properties: {
         comboProductId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         productId: {
             type: 'string',
+            maxLength: 38
         },
         comboQuantity: {
             type: 'number',

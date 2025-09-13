@@ -7,10 +7,15 @@ export const debtPaymentSchema = {
     properties: {
         debtPaymentId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         debtId: {
             type: 'string',
+            maxLength: 38
+        },
+        userId: {
+            type: 'string',
+            maxLength: 38
         },
         amountPaid: {
             type: 'integer',
@@ -31,6 +36,7 @@ export const debtPaymentSchema = {
     required: [
         'debtPaymentId',
         'debtId',
+        'userId',
         'amountPaid',
         'paymentDate',
         'createdAt',

@@ -7,13 +7,15 @@ export const saleSchema = {
     properties: {
         saleId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         userId: {
             type: 'string',
+            maxLength: 38
         },
         customerId: {
             type: 'string',
+            maxLength: 38
         },
         totalAmount: {
             type: 'integer',

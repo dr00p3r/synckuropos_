@@ -1,0 +1,46 @@
+/* Pantalla de Clientes - Solo estilos del contenedor principal */
+.customers-screen {
+  height: 100vh;
+  background-color: #f8fafc;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.customers-header {
+  display: none; /* Oculto por defecto, solo visible en móviles */
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.customers-header h1 {
+  color: #2A423E;
+  font-size: 2rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Contenedor principal de la tabla */
+.customers-table-container {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .customers-header {
+    display: flex;
+  }
+
+  .customers-screen {
+    padding: 16px;
+  }
+}

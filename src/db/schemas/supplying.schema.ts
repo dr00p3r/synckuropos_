@@ -7,13 +7,14 @@ export const supplyingSchema = {
     properties: {
         supplyingId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         supplierName: {
             type: 'string',
         },
         productId: {
             type: 'string',
+            maxLength: 38
         },
         unitCost: {
             type: 'integer',
@@ -26,6 +27,7 @@ export const supplyingSchema = {
         },
         supplyDate: {
             type: 'string',
+            maxLength: 64,
             format: 'date-time'
         },
         isActive: {

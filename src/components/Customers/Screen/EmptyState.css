@@ -1,0 +1,57 @@
+/* Estado vacío */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #6b7280;
+  flex: 1;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  margin: 0 0 32px 0;
+  font-size: 16px;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.empty-state .add-customer-btn {
+  background: linear-gradient(135deg, #2A423E 0%, #547771 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(42, 66, 62, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state .add-customer-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(42, 66, 62, 0.3);
+}
+
+.empty-state .add-customer-btn svg {
+  width: 18px;
+  height: 18px;
+}

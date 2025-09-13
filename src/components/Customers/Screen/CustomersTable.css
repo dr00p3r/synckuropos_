@@ -1,0 +1,11 @@
+/* Tabla de clientes */
+.customers-table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.customers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}

@@ -2,12 +2,17 @@ import { useState } from 'react'
 import SideNavigation from './components/SideNavigation'
 import SalesScreen from './components/Sales/SalesScreen'
 import InventoryScreen from './components/Inventory/InventoryScreen'
+import CustomersScreen from './components/Customers/Screen/CustomersScreen'
 import { ToastProvider } from './components/Toast/ToastProvider'
+import type { SaleItem } from './types/types'
 import './App.css'
 
 function App() {
   const [currentView, setCurrentView] = useState('venta')
   const [userRole, setUserRole] = useState<'admin' | 'cajero'>('admin')
+  
+  // Estado persistente de la venta
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([])
 
   const handleNavigation = (view: string) => {
     setCurrentView(view)
@@ -17,14 +22,25 @@ function App() {
     setUserRole(userRole === 'admin' ? 'cajero' : 'admin')
   }
 
+  // Función para limpiar la venta
+  const clearSale = () => {
+    setSaleItems([])
+  }
+
   const renderContent = () => {
     switch (currentView) {
       case 'venta':
-        return <SalesScreen />
+        return (
+          <SalesScreen 
+            saleItems={saleItems}
+            setSaleItems={setSaleItems}
+            onClearSale={clearSale}
+          />
+        )
       case 'inventario':
         return <InventoryScreen />
       case 'clientes':
-        return <div><h2>👥 Módulo de Clientes</h2><p>Administración de clientes.</p></div>
+        return <CustomersScreen />
       case 'reportes':
         return <div><h2>📈 Módulo de Reportes</h2><p>Visualización de reportes y estadísticas.</p></div>
       case 'ajustes':
@@ -40,11 +56,11 @@ function App() {
         {/* Contenido principal */}
         <main style={{ 
           flex: 1, 
-          padding: (currentView === 'venta' || currentView === 'inventario') ? '0' : '2rem',
+          padding: (currentView === 'venta' || currentView === 'inventario' || currentView === 'clientes') ? '0' : '2rem',
           marginRight: window.innerWidth > 768 ? '30%' : '0',
-          backgroundColor: (currentView === 'venta' || currentView === 'inventario') ? '#f8fafc' : '#f5f5f5'
+          backgroundColor: (currentView === 'venta' || currentView === 'inventario' || currentView === 'clientes') ? '#f8fafc' : '#f5f5f5'
         }}>
-          {(currentView !== 'venta' && currentView !== 'inventario') && (
+          {(currentView !== 'venta' && currentView !== 'inventario' && currentView !== 'clientes') && (
             <div style={{ marginBottom: '2rem' }}>
               <h1>SyncKuroPOS - Sistema de Punto de Venta</h1>
               <div style={{ marginBottom: '1rem' }}>
@@ -69,7 +85,7 @@ function App() {
           )}
           
           {/* Contenido dinámico basado en la vista seleccionada */}
-          {(currentView === 'venta' || currentView === 'inventario') ? (
+          {(currentView === 'venta' || currentView === 'inventario' || currentView === 'clientes') ? (
             renderContent()
           ) : (
             <div style={{

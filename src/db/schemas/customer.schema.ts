@@ -7,10 +7,11 @@ export const customerSchema = {
     properties: {
         customerId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         fullname: {
             type: 'string',
+            maxLength: 64
         },
         phone: {
             type: 'string',
@@ -22,6 +23,15 @@ export const customerSchema = {
         },
         address: {
             type: 'string'
+        },
+        allowCredit: {
+            type: 'boolean',
+            default: false
+        },
+        creditLimit: {
+            type: 'integer', // Valor en centavos
+            minimum: 0,
+            default: 0
         },
         isActive: {
             type: 'boolean',
@@ -39,6 +49,8 @@ export const customerSchema = {
     required: [
         'customerId',
         'fullname',
+        'allowCredit',
+        'creditLimit',
         'isActive',
         'createdAt',
         'updatedAt'

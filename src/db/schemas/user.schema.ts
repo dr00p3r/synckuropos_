@@ -7,7 +7,7 @@ export const userSchema = {
     properties: {
         userId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         username: {
             type: 'string',
@@ -18,6 +18,7 @@ export const userSchema = {
         },
         role: {
             type: 'string',
+            maxLength: 20,
             enum: ['admin', 'cajero']
         },
         isActive: {

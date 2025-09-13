@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Product } from '../../types/types';
 import { useDatabase } from '../../hooks/useDatabase.tsx';
 import { useToast } from '../../hooks/useToast';
+import { v4 as uuidv4 } from 'uuid';
 import './ProductModal.css';
 
 interface ProductModalProps {
@@ -192,7 +193,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     
     try {
       const newProduct: Product = {
-        productId: Date.now().toString(),
+        productId: uuidv4(),
         code: formData.code || undefined,
         name: formData.name,
         stock: 0,
@@ -235,7 +236,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     try {
       // 1. Crear registro en supplying
       const supplyingRecord = {
-        supplyingId: Date.now().toString(),
+        supplyingId: uuidv4(),
         supplierName: '', // Campo opcional
         productId: currentProduct.productId,
         quantity: quantityToMove,
@@ -299,7 +300,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
     try {
       const comboRecord = {
-        comboProductId: Date.now().toString(),
+        comboProductId: uuidv4(),
         productId: currentProduct.productId,
         comboQuantity: quantity,
         comboPrice: Math.round(price * 100), // Convertir a centavos

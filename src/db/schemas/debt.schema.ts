@@ -7,10 +7,11 @@ export const debtSchema = {
     properties: {
         debtId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         customerId: {
             type: 'string',
+            maxLength: 38
         },
         amount: {
             type: 'integer',

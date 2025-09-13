@@ -7,13 +7,15 @@ export const productSchema = {
     properties: {
         productId: {
             type: 'string',
-            maxLength: 32
+            maxLength: 38
         },
         code: {
             type: 'string',
+            maxLength: 32
         },
         name: {
-            type: 'string'
+            type: 'string',
+            maxLength: 64
         },
         stock: {
             type: 'number'

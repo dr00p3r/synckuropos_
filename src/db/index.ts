@@ -10,24 +10,30 @@ import { debtPaymentSchema } from './schemas/debtPayment.schema';
 import { saleSchema } from './schemas/sale.schema';
 import { saleDetailSchema } from './schemas/saleDetail.schema';
 import { userSchema } from './schemas/user.schema';
+
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
-import { RxDBUpdatePlugin } from 'rxdb/plugins/update'; 
+import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
+import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 
 import type { AppDatabase } from '../hooks/useDatabase.tsx';
 
 // Registrar el plugin de Query Builder
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBUpdatePlugin);
+addRxPlugin(RxDBDevModePlugin);
 
 let dbPromise: Promise<AppDatabase> | null = null;
 
 const createDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuroposdb-1',
-        storage: wrappedKeyCompressionStorage({ // <-- Envolvemos aquí
-            storage: getRxStorageDexie(),
+        name: 'synckuroposdb-14',
+        storage: wrappedValidateAjvStorage({ // <-- Envolvemos aquí
+            storage: wrappedKeyCompressionStorage({
+                storage: getRxStorageDexie(),
+            }),
         }),
         multiInstance: false,
         eventReduce: true

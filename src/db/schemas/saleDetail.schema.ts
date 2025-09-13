@@ -11,13 +11,15 @@ export const saleDetailSchema = {
     properties: {
         saleDetailId: {
             type: 'string',
-            maxLength: 64
+            maxLength: 80
         },
         saleId: {
             type: 'string',
+            maxLength: 38
         },
         productId: {
             type: 'string',
+            maxLength: 38
         },
         quantity: {
             type: 'number',

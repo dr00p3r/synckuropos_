@@ -57,7 +57,7 @@ export interface Sale{
 }
 
 export interface SaleDetail{
-    saleDetailId: string;
+    saleDetailId?: string;
     saleId: string;
     productId: string;
     quantity: number;
@@ -78,6 +78,7 @@ export interface Debt{
 export interface DebtPayment{
     debtPaymentId: string;
     debtId: string;
+    userId: string;
     amountPaid: number;
     paymentDate: string;
     createdAt: string;
@@ -87,9 +88,11 @@ export interface DebtPayment{
 export interface Customer{
     customerId: string;
     fullname: string;
-    phone: string;
-    email: string;
-    address: string;
+    phone: string | undefined;
+    email: string | undefined;
+    address: string | undefined;
+    allowCredit: boolean;
+    creditLimit: number; // Valor en centavos
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -98,7 +101,7 @@ export interface Customer{
 // Tipos para el sistema de ventas
 export interface SaleItem {
     productId: string;
-    code: string;
+    code: string | undefined;
     name: string;
     unitPrice: number;
     quantity: number;
