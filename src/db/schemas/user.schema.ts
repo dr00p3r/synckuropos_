@@ -21,9 +21,9 @@ export const userSchema = {
             maxLength: 20,
             enum: ['admin', 'cajero']
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         createdAt: {
             type: 'string',
@@ -39,9 +39,9 @@ export const userSchema = {
         'username',
         'passwordHash',
         'role',
-        'isActive',
+        '_deleted',
         'createdAt',
         'updatedAt'
     ],
-    indexes: ['username', 'role', 'isActive']
+    indexes: ['username', 'role', '_deleted']
 };

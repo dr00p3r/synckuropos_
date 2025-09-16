@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { SideNavigationProps, MenuOption } from '../types/navigation';
-import styles from './SideNavigation.module.css';
+import './SideNavigation.css';
 
 // Componente de icono SVG reutilizable
 const Icon: React.FC<{ name: string; className?: string }> = ({ name, className }) => {
@@ -81,10 +81,12 @@ const settingsOption: MenuOption = {
 const SideNavigation: React.FC<SideNavigationProps> = ({
   userRole,
   activeView,
-  onNavigate
+  onNavigate,
+  onSidebarWidthChange
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const sideNavRef = useRef<HTMLElement>(null);
 
   // Detectar cambios en el tamaño de la pantalla
   useEffect(() => {
@@ -108,6 +110,26 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
       setIsMenuOpen(false);
     }
   }, [isMobile]);
+
+  // Medir y reportar el ancho de la barra lateral en desktop
+  useEffect(() => {
+    if (!isMobile && onSidebarWidthChange && sideNavRef.current) {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          onSidebarWidthChange(entry.contentRect.width);
+        }
+      });
+
+      resizeObserver.observe(sideNavRef.current);
+
+      // Medición inicial
+      onSidebarWidthChange(sideNavRef.current.offsetWidth);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, [isMobile, onSidebarWidthChange]);
 
   // Filtrar opciones según el rol del usuario (excluyendo ajustes)
   const filteredOptions = menuOptions.filter(option => 
@@ -145,38 +167,39 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
       {/* Botón hamburguesa (solo visible en móvil) */}
       {isMobile && (
         <button 
-          className={styles.hamburgerButton}
+          className={"hamburgerButton"}
           onClick={toggleMenu}
           aria-label="Abrir menú de navegación"
         >
-          <span className={styles.hamburgerLine}></span>
-          <span className={styles.hamburgerLine}></span>
-          <span className={styles.hamburgerLine}></span>
+          <span className={"hamburgerLine"}></span>
+          <span className={"hamburgerLine"}></span>
+          <span className={"hamburgerLine"}></span>
         </button>
       )}
 
       {/* Overlay para cerrar el menú en móvil */}
       {isMobile && isMenuOpen && (
         <div 
-          className={styles.overlay}
+          className={"overlay"}
           onClick={handleOverlayClick}
         />
       )}
 
       {/* Contenedor principal del menú */}
       <nav 
-        className={`${styles.sideNav} ${
+        ref={sideNavRef}
+        className={`${"sideNav"} ${
           isMobile 
             ? isMenuOpen 
-              ? styles.sideNavMobileOpen 
-              : styles.sideNavMobile
-            : styles.sideNavDesktop
+              ? "sideNavMobileOpen"
+              : "sideNavMobile"
+            : "sideNavDesktop"
         }`}
       >
         {/* Botón de cerrar en móvil */}
         {isMobile && (
           <button 
-            className={styles.closeButton}
+            className={"closeButton"}
             onClick={toggleMenu}
             aria-label="Cerrar menú"
           >
@@ -185,17 +208,17 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
         )}
 
         {/* Lista de opciones principales del menú */}
-        <ul className={styles.menuList}>
+        <ul className={"menuList"}>
           {filteredOptions.map((option) => (
-            <li key={option.id} className={styles.menuItem}>
+            <li key={option.id} className={"menuItem"}>
               <button
-                className={`${styles.menuOption} ${
-                  activeView === option.id ? styles.menuOptionActive : ''
+                className={`${"menuOption"} ${
+                  activeView === option.id ? "menuOptionActive" : ''
                 }`}
                 onClick={() => handleOptionClick(option.id)}
               >
-                <Icon name={option.icon} className={styles.menuIcon} />
-                <span className={styles.menuLabel}>{option.label}</span>
+                <Icon name={option.icon} className={"menuIcon"} />
+                <span className={"menuLabel"}>{option.label}</span>
               </button>
             </li>
           ))}
@@ -203,15 +226,15 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
 
         {/* Botón de ajustes en la parte inferior */}
         {hasSettingsAccess && (
-          <div className={styles.settingsContainer}>
+          <div className={"settingsContainer"}>
             <button
-              className={`${styles.menuOption} ${styles.settingsOption} ${
-                activeView === settingsOption.id ? styles.menuOptionActive : ''
+              className={`${"menuOption"} ${"settingsOption"} ${
+                activeView === settingsOption.id ? "menuOptionActive" : ''
               }`}
               onClick={() => handleOptionClick(settingsOption.id)}
             >
-              <Icon name={settingsOption.icon} className={styles.menuIcon} />
-              <span className={styles.menuLabel}>{settingsOption.label}</span>
+              <Icon name={settingsOption.icon} className={"menuIcon"} />
+              <span className={"menuLabel"}>{settingsOption.label}</span>
             </button>
           </div>
         )}

@@ -1,0 +1,81 @@
+/* Estilos específicos para StockAdjustmentTab */
+.stock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.current-stock-info {
+  background-color: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.stock-info-left {
+  text-align: center;
+}
+
+.stock-info-right {
+  text-align: center;
+}
+
+.current-stock-info h3 {
+  margin: 0 0 8px 0;
+  color: #166534;
+  font-size: 18px;
+}
+
+.stock-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #16a34a;
+  margin-bottom: 4px;
+}
+
+.price-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #166534;
+}
+
+.current-stock-info p {
+  margin: 0;
+  color: #166534;
+  font-size: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Responsive para StockAdjustmentTab */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .current-stock-info {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .stock-value {
+    font-size: 24px;
+  }
+
+  .price-value {
+    font-size: 18px;
+  }
+}

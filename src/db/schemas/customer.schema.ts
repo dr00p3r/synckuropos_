@@ -33,9 +33,9 @@ export const customerSchema = {
             minimum: 0,
             default: 0
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         createdAt: {
             type: 'string',
@@ -51,7 +51,7 @@ export const customerSchema = {
         'fullname',
         'allowCredit',
         'creditLimit',
-        'isActive',
+        '_deleted',
         'createdAt',
         'updatedAt'
     ],

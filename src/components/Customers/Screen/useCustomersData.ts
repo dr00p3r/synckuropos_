@@ -49,6 +49,8 @@ export const useCustomersData = (): UseCustomersDataReturn => {
 
   // Función para calcular la deuda total de un cliente
   const calculateCustomerDebt = useCallback(async (customerId: string): Promise<number> => {
+    if (!db) return 0;
+    
     try {
       // Obtener todas las deudas del cliente
       const debts = await db.debts.find({
@@ -90,12 +92,14 @@ export const useCustomersData = (): UseCustomersDataReturn => {
 
   // Cargar clientes desde la base de datos
   const loadCustomers = useCallback(async () => {
+    if (!db) return;
+    
     try {
       setLoading(true);
       
       // Obtener todos los clientes activos
       const allCustomers = await db.customers.find({
-        selector: { isActive: true }
+        selector: { _deleted: false }
       }).exec();
 
       const customersData = allCustomers.map((doc: any) => doc.toJSON());
@@ -111,8 +115,28 @@ export const useCustomersData = (): UseCustomersDataReturn => {
         })
       );
 
-      // Aplicar ordenamiento
-      customersWithDebt.sort((a, b) => {
+      setCustomers(customersWithDebt);
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+      toast.showError('Error al cargar los clientes');
+    } finally {
+      setLoading(false);
+    }
+  }, [db, calculateCustomerDebt]);
+
+  // Cargar clientes al montar el componente
+  useEffect(() => {
+    if (db) {
+      loadCustomers();
+    }
+  }, [db, loadCustomers]);
+
+  // Aplicar ordenamiento cuando cambien los criterios
+  useEffect(() => {
+    setCustomers(prevCustomers => {
+      if (prevCustomers.length === 0) return prevCustomers;
+      
+      const sortedCustomers = [...prevCustomers].sort((a, b) => {
         let aValue: any, bValue: any;
         
         switch (sortField) {
@@ -144,19 +168,9 @@ export const useCustomersData = (): UseCustomersDataReturn => {
         }
       });
 
-      setCustomers(customersWithDebt);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-      toast.showError('Error al cargar los clientes');
-    } finally {
-      setLoading(false);
-    }
-  }, [db, calculateCustomerDebt, sortField, sortDirection, toast]);
-
-  // Cargar clientes al montar el componente y cuando cambien los criterios de ordenamiento
-  useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+      return sortedCustomers;
+    });
+  }, [sortField, sortDirection]);
 
   // Filtrar clientes cuando cambian los criterios de búsqueda
   useEffect(() => {
@@ -181,13 +195,16 @@ export const useCustomersData = (): UseCustomersDataReturn => {
 
   // Manejar cambio de ordenamiento
   const handleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  }, [sortField]);
+    setSortField(prevField => {
+      if (prevField === field) {
+        setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        return prevField;
+      } else {
+        setSortDirection('asc');
+        return field;
+      }
+    });
+  }, []);
 
   // Formatear moneda
   const formatCurrency = useCallback((amount: number) => {

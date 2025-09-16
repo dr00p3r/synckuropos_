@@ -19,9 +19,9 @@ export const comboProductSchema = {
         comboPrice: {
             type: 'integer',
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         createdAt: {
             type: 'string',
@@ -37,9 +37,9 @@ export const comboProductSchema = {
         'productId',
         'comboQuantity',
         'comboPrice',
-        'isActive',
+        '_deleted',
         'createdAt',
         'updatedAt'
     ],
-    indexes: ['productId', 'isActive']
+    indexes: ['productId', '_deleted']
 };

@@ -1,0 +1,449 @@
+/* SettingsScreen.css */
+
+.settings-screen {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.settings-header {
+  margin-bottom: 3rem;
+  text-align: center;
+  display: none; /* Hidden by default on larger screens */
+}
+
+.settings-header h1 {
+  color: #2A423E;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.settings-header p {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Settings content grid layout */
+.settings-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 100%;
+}
+
+/* On larger screens, show sections side by side */
+@media (min-width: 1200px) {
+  .settings-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  .password-section {
+    max-width: 100%;
+  }
+  
+  .users-section {
+    max-width: 100%;
+  }
+}
+
+.settings-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #f5c6cb;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+/* Secciones */
+.settings-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(42, 66, 62, 0.08);
+  border: 1px solid #e9ecef;
+  height: fit-content; /* Allow sections to have different heights */
+}
+
+/* Specific section adjustments */
+.password-section .password-form {
+  max-width: 100%; /* Use full width available in the grid */
+}
+
+.users-section {
+  min-height: 400px; /* Ensure minimum height for better alignment */
+}
+
+.section-header {
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 1rem;
+}
+
+.section-header h2 {
+  color: #2A423E;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  color: #6c757d;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Formulario de contraseña */
+.password-form {
+  max-width: 100%; /* Updated to use full width */
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: #2A423E;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.875rem;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2A423E;
+  box-shadow: 0 0 0 3px rgba(42, 66, 62, 0.1);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.form-group input::placeholder {
+  color: #adb5bd;
+}
+
+/* Botones */
+.btn-primary,
+.btn-secondary,
+.btn-cancel {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.btn-primary {
+  background-color: #2A423E;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1e2f2c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(42, 66, 62, 0.2);
+}
+
+.btn-secondary {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-cancel:disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Gestión de usuarios */
+.users-management {
+  max-width: 100%;
+}
+
+.users-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.users-list {
+  background: #f8f9fa;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.empty-users {
+  padding: 3rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.empty-users p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Tabla de usuarios */
+.users-table {
+  width: 100%;
+}
+
+.users-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: #2A423E;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.users-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 1fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+  background-color: white;
+  transition: background-color 0.2s ease;
+}
+
+.users-table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.users-table-row:last-child {
+  border-bottom: none;
+}
+
+.user-username {
+  font-weight: 600;
+  color: #2A423E;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.current-user-badge {
+  background-color: #007bff;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.user-role {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-admin {
+  background-color: #dc3545;
+  color: white;
+}
+
+.role-cajero {
+  background-color: #28a745;
+  color: white;
+}
+
+.user-created {
+  color: #6c757d;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.user-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-status.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.user-status.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-screen {
+    padding: 1rem;
+  }
+
+  /* Show header on mobile */
+  .settings-header {
+    display: block;
+    margin-bottom: 2rem;
+  }
+
+  .settings-header h1 {
+    font-size: 2rem;
+  }
+
+  /* Stack sections on mobile */
+  .settings-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .settings-section {
+    padding: 1.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .users-section {
+    min-height: auto; /* Remove minimum height on mobile */
+  }
+
+  .users-table-header,
+  .users-table-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .users-table-header {
+    display: none; /* Ocultar headers en móvil */
+  }
+
+  .users-table-row {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background-color: white;
+  }
+
+  .users-table-row > span {
+    padding: 0.25rem 0;
+  }
+
+  .users-table-row > span:before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.85rem;
+  }
+
+  .user-username:before {
+    content: 'Usuario: ';
+  }
+
+  .user-role:before {
+    content: 'Rol: ';
+  }
+
+  .user-created:before {
+    content: 'Creado: ';
+  }
+
+  .user-status:before {
+    content: 'Estado: ';
+  }
+}
+
+/* Medium screens - keep single column but show header */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .settings-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .settings-section {
+    padding: 1rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 0.75rem;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-cancel {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+}

@@ -24,6 +24,10 @@ export const debtPaymentSchema = {
             type: 'string',
             format: 'date-time'
         },
+        _deleted: {
+            type: 'boolean',
+            default: false
+        },
         createdAt: {
             type: 'string',
             format: 'date-time'

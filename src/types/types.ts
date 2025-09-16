@@ -3,7 +3,7 @@ export interface User{
     username: string;
     passwordHash: string;
     role: 'admin' | 'cajero';
-    isActive: boolean;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -16,7 +16,7 @@ export interface Product{
     basePrice: number;
     isTaxable: boolean;
     allowDecimalQuantity: boolean;
-    isActive: boolean;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -26,7 +26,7 @@ export interface ComboProduct{
     productId: string;
     comboQuantity: number;
     comboPrice: number;
-    isActive: boolean;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -39,7 +39,7 @@ export interface Supplying{
     quantity: number;
     reason: string;
     supplyDate: string;
-    isActive: boolean;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -49,7 +49,7 @@ export interface Sale{
     userId: string;
     customerId: string;
     totalAmount: number;
-    isActive: boolean;
+    _deleted: boolean;
     isPartOfDebt: boolean;
     SRIStatus: 'pending' | 'uploaded' | 'rejected' | 'accepted';
     createdAt: string;
@@ -65,12 +65,14 @@ export interface SaleDetail{
     subtotal: number;
     taxAmount: number;
     lineTotal: number;
+    _deleted: boolean;
 }
 
 export interface Debt{
     debtId: string;
     customerId: string;
     amount: number;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -81,6 +83,7 @@ export interface DebtPayment{
     userId: string;
     amountPaid: number;
     paymentDate: string;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -93,7 +96,7 @@ export interface Customer{
     address: string | undefined;
     allowCredit: boolean;
     creditLimit: number; // Valor en centavos
-    isActive: boolean;
+    _deleted: boolean;
     createdAt: string;
     updatedAt: string;
 }

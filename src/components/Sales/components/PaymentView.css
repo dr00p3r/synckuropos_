@@ -1,0 +1,249 @@
+/* PaymentView Component Styles */
+
+/* Botón de volver */
+.back-to-sale-button {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.back-to-sale-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+/* Vista de Pago */
+.payment-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: slideIn 0.3s ease-out;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-between;
+}
+
+.payment-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.payment-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.payment-section h3 {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Sección de monto recibido */
+.payment-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: 16px;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 18px;
+  z-index: 1;
+}
+
+.payment-input {
+  width: 100%;
+  padding: 16px 20px 16px 40px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: border-color 0.2s ease;
+}
+
+.payment-input:focus {
+  outline: none;
+  border-color: #2A423E;
+  background-color: white;
+}
+
+.change-indicator {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.change-indicator.positive {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.change-indicator.negative {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Selector de cliente */
+.customer-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: border-color 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.customer-select:focus {
+  outline: none;
+  border-color: #2A423E;
+  background-color: white;
+}
+
+/* Checkbox de crédito */
+.credit-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  user-select: none;
+  padding: 12px 16px;
+  background-color: #fef3cd;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+}
+
+.credit-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.credit-checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f59e0b;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.credit-checkbox:checked + .credit-checkbox-custom {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.credit-checkbox:checked + .credit-checkbox-custom::after {
+  content: '✓';
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Botón de confirmar compra */
+.confirm-purchase-button {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.confirm-purchase-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+}
+
+.confirm-purchase-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive para vista de pago */
+@media (max-width: 768px) {
+  .payment-section {
+    padding: 16px;
+  }
+
+  .payment-section h3 {
+    font-size: 16px;
+  }
+
+  .payment-input {
+    padding: 14px 16px 14px 36px;
+    font-size: 16px;
+  }
+
+  .currency-symbol {
+    font-size: 16px;
+    left: 14px;
+  }
+
+  .confirm-purchase-button {
+    padding: 14px 20px;
+    font-size: 16px;
+    min-height: 50px;
+  }
+}

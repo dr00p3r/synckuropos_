@@ -5,6 +5,7 @@ export interface SideNavigationProps {
   userRole: UserRole;
   activeView: string;
   onNavigate?: (view: string) => void;
+  onSidebarWidthChange?: (width: number) => void;
 }
 
 export interface MenuOption {

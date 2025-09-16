@@ -35,6 +35,10 @@ export const saleDetailSchema = {
         },
         lineTotal: {
             type: 'integer',
+        },
+        _deleted: {
+            type: 'boolean',
+            default: false
         }
     },
     required: [

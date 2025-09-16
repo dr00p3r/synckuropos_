@@ -17,6 +17,10 @@ export const debtSchema = {
             type: 'integer',
             default: 0
         },
+        _deleted: {
+            type: 'boolean',
+            default: false
+        },
         createdAt: {
             type: 'string',
             format: 'date-time'

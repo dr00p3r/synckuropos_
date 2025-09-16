@@ -20,9 +20,9 @@ export const saleSchema = {
         totalAmount: {
             type: 'integer',
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         isPartOfDebt: {
             type: 'boolean',
@@ -47,11 +47,11 @@ export const saleSchema = {
         'userId',
         'customerId',
         'totalAmount',
-        'isActive',
+        '_deleted',
         'isPartOfDebt',
         'SRIStatus',
         'createdAt',
         'updatedAt'
     ],
-    indexes: ['userId', 'customerId', 'isActive']
+    indexes: ['userId', 'customerId', '_deleted']
 };

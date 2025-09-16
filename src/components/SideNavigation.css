@@ -6,6 +6,8 @@
   --sidebar-hover: rgba(84, 119, 113, 0.5);
   --overlay-bg: rgba(0, 0, 0, 0.5);
   --transition-duration: 0.3s;
+  --sidebar-min-width: 220px;
+  --sidebar-max-width: 320px;
 }
 
 /* Botón hamburguesa (solo móvil) */
@@ -68,7 +70,9 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 30%;
+  width: fit-content;
+  min-width: var(--sidebar-min-width);
+  max-width: var(--sidebar-max-width);
   height: 100vh;
   z-index: 100;
 }
@@ -146,6 +150,7 @@
   font-weight: 500;
   transition: all var(--transition-duration) ease;
   text-align: left;
+  white-space: nowrap;
 }
 
 .menuOption:hover {
@@ -212,6 +217,25 @@
   
   .menuList {
     padding: 60px 20px 20px 20px; /* Espacio extra arriba para el botón de cerrar */
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sideNavDesktop {
+    min-width: var(--sidebar-min-width);
+    max-width: 250px;
+  }
+  
+  .menuOption {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sideNavDesktop {
+    min-width: 240px;
+    max-width: var(--sidebar-max-width);
   }
 }
 

@@ -5,15 +5,22 @@ import { useToast } from '../../hooks/useToast';
 import { v4 as uuidv4 } from 'uuid';
 import './ProductModal.css';
 
-interface ProductModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave?: () => void;
-  product?: Product;
-  mode: 'create' | 'edit';
-}
+// Componentes refactorizados
+import { TabNavigation } from './Modal/TabNavigation';
+import { GeneralInfoTab } from './Modal/GeneralInfoTab';
+import { StockAdjustmentTab } from './Modal/StockAdjustmentTab';
+import { CombosTab } from './Modal/CombosTab';
 
-type TabType = 'general' | 'stock' | 'combos';
+// Tipos refactorizados
+import type { 
+  ProductModalProps,
+  TabType,
+  GeneralFormData,
+  StockFormData,
+  ComboData,
+  NewComboForm,
+  EditComboForm
+} from './Modal/ProductModalTypes';
 
 export const ProductModal: React.FC<ProductModalProps> = ({
   isOpen,
@@ -29,16 +36,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
 
   // Estados del formulario - Información General
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<GeneralFormData>({
     code: '',
     name: '',
     allowDecimalQuantity: false,
     isTaxable: true,
-    isActive: true
+    _deleted: false
   });
 
   // Estados del formulario - Ajuste de Stock
-  const [stockData, setStockData] = useState({
+  const [stockData, setStockData] = useState<StockFormData>({
     quantityToMove: '',
     costPerUnit: '',
     newSalePrice: '',
@@ -46,13 +53,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   });
 
   // Estados del formulario - Combos
-  const [combos, setCombos] = useState<Array<{id: string, quantity: number, price: number}>>([]);
-  const [newCombo, setNewCombo] = useState({
+  const [combos, setCombos] = useState<ComboData[]>([]);
+  const [newCombo, setNewCombo] = useState<NewComboForm>({
     quantity: '',
     price: ''
   });
   const [editingCombo, setEditingCombo] = useState<string | null>(null);
-  const [editComboData, setEditComboData] = useState({
+  const [editComboData, setEditComboData] = useState<EditComboForm>({
     quantity: '',
     price: ''
   });
@@ -66,7 +73,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           name: product.name,
           allowDecimalQuantity: product.allowDecimalQuantity,
           isTaxable: product.isTaxable,
-          isActive: product.isActive
+          _deleted: product._deleted
         });
         setActiveTab('stock'); // En edición se abre por defecto en Stock
         loadCombos(product.productId);
@@ -84,7 +91,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       name: '',
       allowDecimalQuantity: false,
       isTaxable: true,
-      isActive: true
+      _deleted: false
     });
     setStockData({
       quantityToMove: '',
@@ -116,6 +123,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
+  // Handlers para GeneralInfoTab
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -123,8 +131,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
+  // Handlers para StockAdjustmentTab
   const handleStockChange = (field: string, value: any) => {
     setStockData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handlers para CombosTab
+  const handleNewComboChange = (field: string, value: string) => {
+    setNewCombo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleEditComboChange = (field: string, value: string) => {
+    setEditComboData(prev => ({
       ...prev,
       [field]: value
     }));
@@ -135,13 +159,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     if (value === '' || value === undefined || value === null) return 0;
     const parsed = parseFloat(value);
     return isNaN(parsed) ? 0 : parsed;
-  };
-
-  // Función para validar que un campo numérico tenga un valor válido
-  const isValidNumber = (value: string): boolean => {
-    if (value === '') return false;
-    const parsed = parseFloat(value);
-    return !isNaN(parsed);
   };
 
   // Verificar si el código ya existe
@@ -172,7 +189,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           name: existingProduct.name,
           allowDecimalQuantity: existingProduct.allowDecimalQuantity,
           isTaxable: existingProduct.isTaxable,
-          isActive: existingProduct.isActive
+          _deleted: existingProduct._deleted
         });
         setActiveTab('stock');
         await loadCombos(existingProduct.productId);
@@ -200,7 +217,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         basePrice: 0,
         isTaxable: formData.isTaxable,
         allowDecimalQuantity: formData.allowDecimalQuantity,
-        isActive: formData.isActive,
+        _deleted: formData._deleted,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -243,7 +260,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         unitCost: Math.round(costPerUnit * 100), // Convertir a centavos
         reason: stockData.reason,
         supplyDate: new Date().toISOString(),
-        isActive: true,
+        _deleted: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -264,7 +281,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
         // 3. Actualizar precio si se especificó uno nuevo
         if (newSalePrice > 0) {
-          updateData.basePrice = newSalePrice;
+          updateData.basePrice = Math.round(newSalePrice * 100);
         }
 
         await productDoc.update({ $set: updateData });
@@ -304,7 +321,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         productId: currentProduct.productId,
         comboQuantity: quantity,
         comboPrice: Math.round(price * 100), // Convertir a centavos
-        isActive: true,
+        _deleted: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -344,7 +361,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  const handleEditCombo = (combo: {id: string, quantity: number, price: number}) => {
+  const handleEditCombo = (combo: ComboData) => {
     setEditingCombo(combo.id);
     setEditComboData({
       quantity: combo.quantity.toString(),
@@ -416,286 +433,52 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         </div>
 
         {/* Tabs Navigation */}
-        <div className="modal-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'general' ? 'active' : ''}`}
-            onClick={() => setActiveTab('general')}
-          >
-            Información General
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'stock' ? 'active' : ''}`}
-            onClick={() => setActiveTab('stock')}
-            disabled={!currentProduct}
-          >
-            Ajuste de Stock
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'combos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('combos')}
-            disabled={!currentProduct}
-          >
-            Combos del Producto
-          </button>
-        </div>
+        <TabNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasProduct={!!currentProduct}
+        />
 
         <div className="modal-body">
           {/* Pestaña: Información General */}
           {activeTab === 'general' && (
-            <div className="general-form">
-              <div className="form-field">
-                <label>Código de Barras (Opcional)</label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={e => handleCodeChange(e.target.value)}
-                  placeholder="Ej: PROD001 o código de barras"
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Nombre del Producto *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="Ingrese el nombre del producto"
-                  required
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.allowDecimalQuantity}
-                    onChange={e => handleInputChange('allowDecimalQuantity', e.target.checked)}
-                  />
-                  <span className="checkbox-text">Permitir Cantidad Decimal</span>
-                </label>
-              </div>
-
-              <div className="form-field">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.isTaxable}
-                    onChange={e => handleInputChange('isTaxable', e.target.checked)}
-                  />
-                  <span className="checkbox-text">Aplica Impuestos</span>
-                </label>
-              </div>
-
-              <div className="form-field">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={e => handleInputChange('isActive', e.target.checked)}
-                  />
-                  <span className="checkbox-text">Producto Activo</span>
-                </label>
-              </div>
-            </div>
+            <GeneralInfoTab
+              formData={formData}
+              onInputChange={handleInputChange}
+              onCodeChange={handleCodeChange}
+              onSave={handleSaveGeneral}
+              loading={loading}
+              currentProduct={currentProduct}
+            />
           )}
 
           {/* Pestaña: Ajuste de Stock */}
           {activeTab === 'stock' && currentProduct && (
-            <div className="stock-form">
-              <div className="current-stock-info">
-                <div className="stock-info-left">
-                  <h3>Stock Actual</h3>
-                  <div className="stock-value">{currentProduct.stock}</div>
-                  <p>unidades</p>
-                </div>
-                <div className="stock-info-right">
-                  <h3>Precio Actual</h3>
-                  <div className="price-value">${currentProduct.basePrice.toFixed(2)}</div>
-                  <p>por unidad</p>
-                </div>
-              </div>
-
-              <div className="form-field">
-                <label>Cantidad a Mover (+ entrada, - salida) *</label>
-                <input
-                  type="number"
-                  value={stockData.quantityToMove}
-                  onChange={e => handleStockChange('quantityToMove', e.target.value)}
-                  placeholder="Ej: 50 (entrada) o -10 (salida)"
-                  step={currentProduct.allowDecimalQuantity ? "0.01" : "1"}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Costo por Unidad</label>
-                  <input
-                    type="number"
-                    value={stockData.costPerUnit}
-                    onChange={e => handleStockChange('costPerUnit', e.target.value)}
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label>Nuevo Precio de Venta (Opcional)</label>
-                  <input
-                    type="number"
-                    value={stockData.newSalePrice}
-                    onChange={e => handleStockChange('newSalePrice', e.target.value)}
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div className="form-field">
-                <label>Razón del Movimiento</label>
-                <select
-                  value={stockData.reason}
-                  onChange={e => handleStockChange('reason', e.target.value)}
-                >
-                  <option value="Reabastecimiento">Reabastecimiento</option>
-                  <option value="Venta Manual">Venta Manual</option>
-                  <option value="Ajuste por Pérdida">Ajuste por Pérdida</option>
-                  <option value="Devolución">Devolución</option>
-                  <option value="Inventario Inicial">Inventario Inicial</option>
-                </select>
-              </div>
-            </div>
+            <StockAdjustmentTab
+              currentProduct={currentProduct}
+              stockData={stockData}
+              onStockChange={handleStockChange}
+              onStockMovement={handleStockMovement}
+              loading={loading}
+            />
           )}
 
           {/* Pestaña: Combos del Producto */}
           {activeTab === 'combos' && currentProduct && (
-            <div className="combos-form">
-              <div className="combos-list">
-                <h3>Combos Configurados</h3>
-                {combos.length === 0 ? (
-                  <div className="no-combos">
-                    No hay combos configurados para este producto
-                  </div>
-                ) : (
-                  <div className="combos-table-container">
-                    <table className="combos-table">
-                      <thead>
-                        <tr>
-                          <th>Cantidad</th>
-                          <th>Precio Combo</th>
-                          <th>Precio Normal</th>
-                          <th>Ahorro</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {combos.map((combo) => (
-                          <tr 
-                            key={combo.id}
-                            onDoubleClick={() => handleEditCombo(combo)}
-                            className="combo-row"
-                          >
-                            <td>
-                              {editingCombo === combo.id ? (
-                                <input
-                                  type="number"
-                                  value={editComboData.quantity}
-                                  onChange={e => setEditComboData(prev => ({ ...prev, quantity: e.target.value }))}
-                                  min="1"
-                                  className="edit-input"
-                                />
-                              ) : (
-                                combo.quantity
-                              )}
-                            </td>
-                            <td>
-                              {editingCombo === combo.id ? (
-                                <input
-                                  type="number"
-                                  value={editComboData.price}
-                                  onChange={e => setEditComboData(prev => ({ ...prev, price: e.target.value }))}
-                                  min="0"
-                                  step="0.01"
-                                  className="edit-input"
-                                />
-                              ) : (
-                                `$${combo.price.toFixed(2)}`
-                              )}
-                            </td>
-                            <td>${(currentProduct.basePrice * combo.quantity).toFixed(2)}</td>
-                            <td className="savings">
-                              ${((currentProduct.basePrice * combo.quantity) - combo.price).toFixed(2)}
-                            </td>
-                            <td className="combo-actions">
-                              {editingCombo === combo.id ? (
-                                <div className="edit-actions">
-                                  <button
-                                    className="save-edit-btn"
-                                    onClick={handleSaveEditCombo}
-                                    disabled={parseNumber(editComboData.quantity) <= 0 || parseNumber(editComboData.price) <= 0}
-                                  >
-                                    ✓
-                                  </button>
-                                  <button
-                                    className="cancel-edit-btn"
-                                    onClick={handleCancelEditCombo}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  className="delete-combo-btn"
-                                  onClick={() => handleDeleteCombo(combo.id)}
-                                  title="Eliminar combo"
-                                >
-                                  🗑️
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              <div className="new-combo-form">
-                <h3>Agregar Nuevo Combo</h3>
-                <div className="form-row">
-                  <div className="form-field">
-                    <label>Cantidad</label>
-                    <input
-                      type="number"
-                      value={newCombo.quantity}
-                      onChange={e => setNewCombo(prev => ({ ...prev, quantity: e.target.value }))}
-                      min="1"
-                      placeholder="Cantidad del combo"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label>Precio del Combo</label>
-                    <input
-                      type="number"
-                      value={newCombo.price}
-                      onChange={e => setNewCombo(prev => ({ ...prev, price: e.target.value }))}
-                      min="0"
-                      step="0.01"
-                      placeholder="Precio especial"
-                    />
-                  </div>
-                </div>
-                <button
-                  className="create-combo-btn"
-                  onClick={handleAddCombo}
-                  disabled={parseNumber(newCombo.quantity) <= 0 || parseNumber(newCombo.price) <= 0}
-                >
-                  Agregar Combo
-                </button>
-              </div>
-            </div>
+            <CombosTab
+              currentProduct={currentProduct}
+              combos={combos}
+              newCombo={newCombo}
+              editingCombo={editingCombo}
+              editComboData={editComboData}
+              onNewComboChange={handleNewComboChange}
+              onEditComboChange={handleEditComboChange}
+              onAddCombo={handleAddCombo}
+              onEditCombo={handleEditCombo}
+              onSaveEditCombo={handleSaveEditCombo}
+              onCancelEditCombo={handleCancelEditCombo}
+              onDeleteCombo={handleDeleteCombo}
+            />
           )}
         </div>
 
@@ -703,26 +486,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           <button className="cancel-btn" onClick={onClose}>
             Cancelar
           </button>
-          
-          {activeTab === 'general' && (
-            <button
-              className="save-btn"
-              onClick={handleSaveGeneral}
-              disabled={loading || !formData.name.trim()}
-            >
-              {loading ? 'Guardando...' : currentProduct ? 'Actualizar Información' : 'Crear y Continuar'}
-            </button>
-          )}
-
-          {activeTab === 'stock' && currentProduct && (
-            <button
-              className="save-btn"
-              onClick={handleStockMovement}
-              disabled={loading || !isValidNumber(stockData.quantityToMove) || parseNumber(stockData.quantityToMove) === 0}
-            >
-              {loading ? 'Procesando...' : 'Confirmar Movimiento'}
-            </button>
-          )}
         </div>
       </div>
     </div>

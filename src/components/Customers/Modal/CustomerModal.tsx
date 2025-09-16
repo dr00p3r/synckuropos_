@@ -26,7 +26,7 @@ interface CustomerFormData {
   address: string;
   allowCredit: boolean;
   creditLimit: string;
-  isActive: boolean;
+  _deleted: boolean;
 }
 
 // Interfaz para el resumen de deuda
@@ -64,7 +64,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     address: '',
     allowCredit: false,
     creditLimit: '',
-    isActive: true
+    _deleted: false
   });
 
   // Estados para gestión de deuda
@@ -89,7 +89,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           address: customer.address || '',
           allowCredit: customer.allowCredit,
           creditLimit: (customer.creditLimit / 100).toString(), // Convertir centavos a dólares
-          isActive: customer.isActive
+          _deleted: customer._deleted
         });
         
         // Decidir qué pestaña abrir
@@ -112,7 +112,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       address: '',
       allowCredit: false,
       creditLimit: '',
-      isActive: true
+      _deleted: false
     });
     setDebtSummary({
       totalDebt: 0,
@@ -213,7 +213,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         address: formData.address.trim() || undefined,
         allowCredit: formData.allowCredit,
         creditLimit: formData.allowCredit ? Math.round(parseFloat(formData.creditLimit) * 100) : 0, // Convertir a centavos
-        isActive: formData.isActive,
+        _deleted: formData._deleted,
         createdAt: customer?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -235,7 +235,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               address: customerData.address,
               allowCredit: customerData.allowCredit,
               creditLimit: customerData.creditLimit,
-              isActive: customerData.isActive,
+              _deleted: customerData._deleted,
               updatedAt: customerData.updatedAt
             }
           });
@@ -295,7 +295,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           amountPaid: amountToApply,
           paymentDate: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          _deleted: false
         };
 
         await db.debtPayments.insert(payment);

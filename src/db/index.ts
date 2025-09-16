@@ -29,7 +29,7 @@ let dbPromise: Promise<AppDatabase> | null = null;
 
 const createDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuroposdb-14',
+        name: 'synckuroposdb-21',
         storage: wrappedValidateAjvStorage({ // <-- Envolvemos aquí
             storage: wrappedKeyCompressionStorage({
                 storage: getRxStorageDexie(),

@@ -1,0 +1,97 @@
+/* SearchResults Component Styles */
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-top: 4px;
+}
+
+.search-result-item {
+  display: grid;
+  grid-template-columns: 120px 1fr 100px;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s ease;
+  align-items: center;
+}
+
+.search-result-item:hover {
+  background-color: #f0fdf4;
+}
+
+.search-result-item.selected {
+  background-color: #dcfce7;
+  border-left: 4px solid #2A423E;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.product-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.product-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+.product-price {
+  font-weight: 600;
+  color: #2A423E;
+  text-align: right;
+}
+
+/* Scrollbar personalizado para resultados de búsqueda */
+.search-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #2A423E 0%, #547771 100%);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #1f332f 0%, #456962 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .search-result-item {
+    grid-template-columns: 100px 1fr 80px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-result-item {
+    grid-template-columns: 1fr 70px;
+    gap: 8px;
+  }
+
+  .product-code {
+    display: none;
+  }
+}

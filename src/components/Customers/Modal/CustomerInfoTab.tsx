@@ -8,7 +8,7 @@ interface CustomerFormData {
   address: string;
   allowCredit: boolean;
   creditLimit: string;
-  isActive: boolean;
+  _deleted: boolean;
 }
 
 interface CustomerInfoTabProps {

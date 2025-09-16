@@ -30,9 +30,9 @@ export const productSchema = {
         isTaxable: {
             type: 'boolean'
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         createdAt: {
             type: 'string',
@@ -51,9 +51,9 @@ export const productSchema = {
         'basePrice',
         'isTaxable',
         'allowDecimalQuantity',
-        'isActive',
+        '_deleted',
         'createdAt',
         'updatedAt'
     ],
-    indexes: ['code', 'name', 'isActive']
+    indexes: ['code', 'name', '_deleted']
 };

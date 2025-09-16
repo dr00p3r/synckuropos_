@@ -9,6 +9,10 @@ export const supplyingSchema = {
             type: 'string',
             maxLength: 38
         },
+        userId: {
+            type: 'string',
+            maxLength: 38
+        },
         supplierName: {
             type: 'string',
         },
@@ -30,9 +34,9 @@ export const supplyingSchema = {
             maxLength: 64,
             format: 'date-time'
         },
-        isActive: {
+        _deleted: {
             type: 'boolean',
-            default: true
+            default: false
         },
         createdAt: {
             type: 'string',
@@ -49,9 +53,9 @@ export const supplyingSchema = {
         'unitCost',
         'quantity',
         'supplyDate',
-        'isActive',
+        '_deleted',
         'createdAt',
         'updatedAt'
     ],
-    indexes: ['productId', 'supplyDate', 'isActive']
+    indexes: ['productId', 'supplyDate', '_deleted']
 };
