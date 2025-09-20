@@ -1,0 +1,20 @@
+{
+  "name": "synckuropos_server",
+  "version": "1.0.0",
+  "description": "Servidor de RxDB para la replicación de synckuropos",
+  "keywords": [
+    "Server",
+    "RxDB",
+    "Replication"
+  ],
+  "license": "ISC",
+  "author": "dr00p3r",
+  "type": "commonjs",
+  "main": "server.ts",
+  "scripts": {
+    "test": "test"
+  },
+  "dependencies": {
+    "rxdb-server": "^16.18.0"
+  }
+}

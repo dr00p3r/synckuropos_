@@ -1,0 +1,37 @@
+/* Header de la tabla */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  background-color: #f8fafc;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Específicamente para la columna de código */
+.sortable-header:first-child {
+  width: 100px;
+  max-width: 100px;
+}
+
+.sortable-header:hover {
+  background-color: #f1f5f9;
+}
+
+.actions-header {
+  text-align: center;
+  background-color: #f8fafc;
+  padding: 16px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}

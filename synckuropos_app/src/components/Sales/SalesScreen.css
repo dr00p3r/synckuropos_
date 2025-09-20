@@ -1,0 +1,67 @@
+/* Pantalla de Ventas - Componente Contenedor */
+.sales-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  gap: 20px;
+  background-color: #f8fafc;
+}
+
+/* Animaciones para transición de vistas */
+.sale-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: all 0.3s ease-in-out;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sale-view.hidden {
+  display: none;
+}
+
+.sale-view.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Header */
+.sales-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.sales-header h1 {
+  color: #2A423E;
+  font-size: 2rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sales-screen {
+    padding: 10px;
+    gap: 15px;
+  }
+
+  .sales-header {
+    display: flex;
+  }
+
+  .sales-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sales-screen {
+    padding: 8px;
+  }
+}
