@@ -6,6 +6,7 @@ import {
 } from 'react';
 
 import { getDb } from '../db';
+import { startReplications } from '../helpers/replication';
 
 import type { FC, ReactNode } from 'react';
 import type { RxDatabase, RxCollection } from 'rxdb';
@@ -52,11 +53,15 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         const dbInstance = await getDb();
         setDb(dbInstance);
         
-        // Inicializar datos de ejemplo
-        const { initializeSampleData } = await import('../utils/sampleData');
-        await initializeSampleData(dbInstance);
-        
+        // Init sample data
+        //const { initializeSampleData } = await import('../utils/sampleData');
+        //await initializeSampleData(dbInstance);
         console.log('✅ Base de datos inicializada correctamente');
+
+        // Init replications
+        await startReplications(dbInstance);
+        console.log('✅ Replicaciones iniciadas correctamente');
+
       } catch (error) {
         console.error('❌ Error inicializando la base de datos:', error);
       }

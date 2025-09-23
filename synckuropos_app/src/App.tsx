@@ -4,6 +4,7 @@ import SalesScreen from './components/Sales/SalesScreen'
 import InventoryScreen from './components/Inventory/InventoryScreen'
 import CustomersScreen from './components/Customers/Screen/CustomersScreen'
 import SettingsScreen from './components/Settings/SettingsScreen'
+import { ReportsPage } from './components/Reports'
 import { LoginScreen } from './components/Auth'
 
 import { useAuth } from './hooks/useAuth'
@@ -11,7 +12,7 @@ import type { SaleItem } from './types/types'
 import './App.css'
 
 function App() {
-  const { currentUser, logout, isLoading } = useAuth();
+  const { currentUser, isLoading } = useAuth();
   const [currentView, setCurrentView] = useState('venta')
   const [sidebarWidth, setSidebarWidth] = useState(280) // Ancho por defecto
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768)
@@ -58,12 +59,12 @@ function App() {
     setSidebarWidth(width)
   }
 
-  const toggleUserRole = () => {
-    // Esta función ya no es necesaria porque el rol se maneja por autenticación
-    // Podrías implementar un cambio de usuario aquí si lo deseas
-    console.log('Cambio de rol a través de logout y nuevo login');
-    logout();
-  };
+  // const toggleUserRole = () => {
+  //   // Esta función ya no es necesaria porque el rol se maneja por autenticación
+  //   // Podrías implementar un cambio de usuario aquí si lo deseas
+  //   console.log('Cambio de rol a través de logout y nuevo login');
+  //   logout();
+  // };
 
   // Función para limpiar la venta
   const clearSale = () => {
@@ -85,7 +86,7 @@ function App() {
       case 'clientes':
         return <CustomersScreen />
       case 'reportes':
-        return <div><h2>📈 Módulo de Reportes</h2><p>Visualización de reportes y estadísticas.</p></div>
+        return <ReportsPage />
       case 'ajustes':
         return <SettingsScreen />;
       default:
@@ -103,30 +104,6 @@ function App() {
         backgroundColor: (currentView === 'venta' || currentView === 'inventario' || currentView === 'clientes' || currentView === 'ajustes') ? '#f8fafc' : '#f5f5f5',
         transition: 'margin-right 0.3s ease'
       }}>
-        {(currentView !== 'venta' && currentView !== 'inventario' && currentView !== 'clientes' && currentView !== 'ajustes') && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h1>SyncKuroPOS - Sistema de Punto de Venta</h1>
-            <div style={{ marginBottom: '1rem' }}>
-              <button 
-                onClick={toggleUserRole}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#2A423E',
-                  color: '#F0EFE7',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Cerrar Sesión
-              </button>
-              <span style={{ marginLeft: '1rem', fontWeight: 'bold' }}>
-                Usuario: {currentUser?.username} | Rol: {currentUser?.role === 'admin' ? 'Administrador' : 'Cajero'}
-              </span>
-            </div>
-          </div>
-        )}
-        
         {/* Contenido dinámico basado en la vista seleccionada */}
         {(currentView === 'venta' || currentView === 'inventario' || currentView === 'clientes' || currentView === 'ajustes') ? (
           renderContent()

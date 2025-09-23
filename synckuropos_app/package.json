@@ -12,17 +12,20 @@
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
+    "framer-motion": "^12.23.18",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "recharts": "^3.2.1",
     "rxdb": "^16.19.0",
+    "rxdb-server": "^16.18.0",
     "rxjs": "^7.8.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@tauri-apps/cli": "^2.8.4",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.1.7",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "eslint": "^9.33.0",

@@ -9,12 +9,23 @@
   ],
   "license": "ISC",
   "author": "dr00p3r",
-  "type": "commonjs",
+  "type": "module",
   "main": "server.ts",
   "scripts": {
+    "dev": "tsx server.ts",
     "test": "test"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "@types/express": "5.0.3",
+    "mongodb": "^6.20.0",
+    "rxdb": "^16.19.0",
     "rxdb-server": "^16.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "express": "5.1.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   }
 }

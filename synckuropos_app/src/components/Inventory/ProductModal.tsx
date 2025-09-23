@@ -212,7 +212,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     try {
       const newProduct: Product = {
         productId: uuidv4(),
-        code: formData.code || undefined,
+        code: formData.code || '',
         name: formData.name,
         stock: 0,
         basePrice: 0,

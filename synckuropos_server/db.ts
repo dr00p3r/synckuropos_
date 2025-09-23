@@ -1,16 +1,18 @@
-// server-database.ts
-import { addRxPlugin, createRxDatabase, RxDatabase } from 'rxdb';
-import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
+// db.ts
+import { addRxPlugin, createRxDatabase } from 'rxdb';
+import type { RxDatabase } from 'rxdb';
 
-import { productSchema } from '../synckuropos_schemas/product.schema';
-import { customerSchema } from '../synckuropos_schemas/customer.schema';
-import { supplyingSchema } from '../synckuropos_schemas/supplying.schema';
-import { comboProductSchema } from '../synckuropos_schemas/comboProduct.schema';
-import { debtSchema } from '../synckuropos_schemas/debt.schema';
-import { debtPaymentSchema } from '../synckuropos_schemas/debtPayment.schema';
-import { saleSchema } from '../synckuropos_schemas/sale.schema';
-import { saleDetailSchema } from '../synckuropos_schemas/saleDetail.schema';
-import { userSchema } from '../synckuropos_schemas/user.schema';
+import { getRxStorageMongoDB } from 'rxdb/plugins/storage-mongodb';
+
+import { productSchema } from '../synckuropos_schemas/product.schema.ts';
+import { customerSchema } from '../synckuropos_schemas/customer.schema.ts';
+import { supplyingSchema } from '../synckuropos_schemas/supplying.schema.ts';
+import { comboProductSchema } from '../synckuropos_schemas/comboProduct.schema.ts';
+import { debtSchema } from '../synckuropos_schemas/debt.schema.ts';
+import { debtPaymentSchema } from '../synckuropos_schemas/debtPayment.schema.ts';
+import { saleSchema } from '../synckuropos_schemas/sale.schema.ts';
+import { saleDetailSchema } from '../synckuropos_schemas/saleDetail.schema.ts';
+import { userSchema } from '../synckuropos_schemas/user.schema.ts';
 
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
@@ -25,7 +27,13 @@ export const createServerDatabase = async (): Promise<RxDatabase> => {
     name: 'synckuroposdb-server',
     storage: wrappedValidateAjvStorage({
       storage: wrappedKeyCompressionStorage({
-        storage: getRxStorageDexie(),
+        storage: getRxStorageMongoDB({
+          /**
+           * MongoDB connection string
+           * @link https://www.mongodb.com/docs/manual/reference/connection-string/
+           */
+          connection: 'mongodb://localhost:27017'
+        }),
       }),
     }),
     multiInstance: false,
