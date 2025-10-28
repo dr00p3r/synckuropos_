@@ -1,0 +1,222 @@
+/* 
+ * CustomerInfoTab.css - Sistema de diseño híbrido
+ * Usa componentes del sistema + clases utilitarias
+ */
+
+/* Importar el sistema de diseño global */
+@import '../../../../styles/globals.css';
+
+/* Pestaña de Información del Cliente */
+.customer-info-tab h3 {
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+  line-height: var(--line-height-tight);
+}
+
+.customer-form-row {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.customer-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-form-group label {
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.required {
+  color: var(--color-error);
+}
+
+.customer-form-group input,
+.customer-form-group textarea {
+  padding: 12px var(--spacing-md);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  transition: var(--transition-all);
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-primary);
+}
+
+.customer-form-group input:focus,
+.customer-form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  box-shadow: 0 0 0 3px rgba(42, 66, 62, 0.1);
+  transform: translateY(-1px);
+}
+
+.customer-form-group input::placeholder,
+.customer-form-group textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.customer-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Input de moneda */
+.customer-currency-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  z-index: 1;
+  font-family: var(--font-family-mono);
+}
+
+.customer-currency-input input {
+  padding-left: 40px;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+}
+
+.customer-currency-input input:focus {
+  color: var(--color-text-primary);
+}
+
+/* Checkbox personalizado */
+.customer-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  user-select: none;
+  transition: var(--transition-all);
+}
+
+.customer-checkbox-label:hover {
+  color: var(--color-primary);
+}
+
+.customer-checkbox-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.customer-checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-all);
+  background-color: var(--color-bg-primary);
+}
+
+.customer-checkbox-label input[type="checkbox"]:checked + .customer-checkbox-custom {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.customer-checkbox-label input[type="checkbox"]:checked + .customer-checkbox-custom::after {
+  content: '✓';
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Botones - Usando componentes del sistema */
+.customer-btn {
+  padding: 12px var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-all);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  min-width: 120px;
+  font-family: var(--font-family-primary);
+  line-height: 1;
+}
+
+.customer-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.customer-btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  box-shadow: var(--shadow-button);
+}
+
+.customer-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.customer-btn-secondary {
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border: 2px solid var(--color-border);
+}
+
+.customer-btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-muted);
+  border-color: var(--color-text-muted);
+  transform: translateY(-1px);
+}
+
+.customer-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: var(--spacing-2xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .customer-form-row {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .customer-form-actions {
+    flex-direction: column-reverse;
+    gap: var(--spacing-sm);
+  }
+
+  .customer-btn {
+    width: 100%;
+  }
+}

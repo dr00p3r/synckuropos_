@@ -1,0 +1,75 @@
+/* 
+ * App.css - Estilos específicos de la aplicación SyncKuroPOS
+ * Usa el sistema de diseño global definido en globals.css
+ */
+
+/* Importar sistema de diseño global */
+@import './globals.css';
+
+/* Reset adicional específico de la aplicación */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  /* Usar variables del sistema de diseño */
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-primary);
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Estilos generales para la aplicación usando el sistema */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-primary);
+  margin-top: 0;
+  line-height: var(--line-height-tight);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Aplicar clases globales por defecto a elementos específicos */
+input, select, textarea {
+  font-family: var(--font-family-primary);
+}
+
+/* Responsive typography usando variables del sistema */
+@media (max-width: 768px) {
+  h1 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  h2 {
+    font-size: var(--font-size-xl);
+  }
+  
+  h3 {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* Estilos específicos de la aplicación que no están en globals.css */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  transition: margin-right var(--transition-slow);
+}
+
+/* Override de clases globales si es necesario para casos específicos */
+/* .app-specific-override {
+  Usar solo cuando sea absolutamente necesario
+  Ejemplo: color: var(--color-custom) !important;
+} */

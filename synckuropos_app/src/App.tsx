@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import SideNavigation from './components/SideNavigation'
-import SalesScreen from './components/Sales/SalesScreen'
-import InventoryScreen from './components/Inventory/InventoryScreen'
-import CustomersScreen from './components/Customers/Screen/CustomersScreen'
-import SettingsScreen from './components/Settings/SettingsScreen'
-import { ReportsPage } from './components/Reports'
-import { LoginScreen } from './components/Auth'
+import SideNavigation from '@/shared/components/SideNavigation'
+import { SalesScreen } from '@/features/sales'
+import { InventoryScreen } from '@/features/inventory'
+import { CustomersScreen } from '@/features/customers'
+import { SettingsScreen } from '@/features/settings'
+import { ReportsPage } from '@/features/reports'
+import { LoginScreen } from '@/features/auth'
 
-import { useAuth } from './hooks/useAuth'
-import type { SaleItem } from './types/types'
-import './App.css'
+import { useAuth } from '@/hooks/useAuth'
+import type { SaleItem } from '@/types/types'
+import '@/styles/App.css'
 
 function App() {
   const { currentUser, isLoading } = useAuth();

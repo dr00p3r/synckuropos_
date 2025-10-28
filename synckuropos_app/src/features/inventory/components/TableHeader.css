@@ -1,0 +1,48 @@
+/* 
+ * TableHeader.css - Migrado al sistema de diseño global
+ * Usa variables CSS del sistema para consistencia
+ */
+
+/* Header de la tabla usando el sistema de diseño */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-colors);
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+/* Específicamente para la columna de código */
+.sortable-header:first-child {
+  width: 100px;
+  max-width: 100px;
+}
+
+.sortable-header:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.actions-header {
+  /* Usar las mismas variables del sistema */
+  text-align: center;
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  transition: var(--transition-colors);
+}
+
+.actions-header:hover {
+  background-color: var(--color-bg-tertiary);
+}

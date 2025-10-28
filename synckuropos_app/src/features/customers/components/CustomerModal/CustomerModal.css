@@ -1,0 +1,241 @@
+/* 
+ * CustomerModal.css - Sistema de diseño híbrido
+ * Clases utilitarias + componentes del sistema
+ */
+
+/* Importar el sistema de diseño global */
+@import '../../../../styles/globals.css';
+
+/* Variables específicas del modal */
+:root {
+  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+  --modal-max-width: 800px;
+}
+
+/* Clases utilitarias para el modal */
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.z-modal {
+  z-index: 1000;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.p-5 {
+  padding: 1.25rem;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.max-w-4xl {
+  max-width: var(--modal-max-width);
+}
+
+.max-h-screen-90 {
+  max-height: 90vh;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Modal de Gestión de Clientes */
+.customer-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--modal-overlay-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1.25rem;
+}
+
+.customer-modal-content {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: var(--modal-max-width);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Header del Modal */
+.customer-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+}
+
+.customer-modal-header h2 {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.customer-modal-close {
+  background: none;
+  border: none;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-all);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.customer-modal-close:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transform: scale(1.05);
+}
+
+/* Navegación de Pestañas */
+.customer-modal-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--color-border);
+  background-color: var(--color-bg-primary);
+}
+
+.customer-tab {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  transition: var(--transition-all);
+  border-bottom: 3px solid transparent;
+  position: relative;
+  font-family: var(--font-family-primary);
+}
+
+.customer-tab:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-muted);
+  transform: translateY(-1px);
+}
+
+.customer-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background-color: var(--color-bg-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Cuerpo del Modal */
+.customer-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg-primary);
+}
+
+/* Animación de entrada */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive para el modal principal */
+@media (max-width: 768px) {
+  .customer-modal-overlay {
+    padding: var(--spacing-sm);
+  }
+
+  .customer-modal-content {
+    max-height: 95vh;
+  }
+
+  .customer-modal-header {
+    padding: var(--spacing-md);
+  }
+
+  .customer-modal-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  .customer-modal-body {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .customer-modal-tabs {
+    flex-direction: column;
+  }
+
+  .customer-tab {
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    border-right: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .customer-tab.active {
+    border-bottom-color: var(--color-primary);
+    border-right-color: transparent;
+  }
+}

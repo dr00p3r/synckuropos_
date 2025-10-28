@@ -1,0 +1,57 @@
+/* 
+ * CustomerTableHeader.css - Sistema de diseño híbrido
+ * Header de la tabla de clientes
+ */
+
+/* Importar el sistema de diseño global */
+@import '../../../../../styles/globals.css';
+
+/* Header de la tabla de clientes */
+.customers-table thead {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.customers-table th {
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  font-family: var(--font-family-primary);
+}
+
+/* Centrar columnas específicas en el header */
+.customers-table th:nth-child(2), /* Teléfono */
+.customers-table th:nth-child(3), /* Deuda Total */
+.customers-table th:nth-child(4), /* Límite de Crédito */
+.customers-table th:nth-child(5) { /* Acciones */
+  text-align: center;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-all);
+  position: relative;
+}
+
+.sortable-header:hover {
+  color: var(--color-primary-light);
+  transform: translateY(-1px);
+}
+
+.sortable-header:active {
+  transform: translateY(0);
+}
+
+.actions-header {
+  text-align: center;
+  width: 120px;
+}

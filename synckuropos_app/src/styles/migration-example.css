@@ -1,0 +1,209 @@
+/* 
+ * EJEMPLO DE MIGRACIÓN - TableHeader
+ * Antes y después de aplicar el sistema de diseño global
+ */
+
+/* ==========================================
+   ANTES - CSS Individual Repetitivo
+   ========================================== */
+
+/*
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  background-color: #f8fafc;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sortable-header:first-child {
+  width: 100px;
+  max-width: 100px;
+}
+
+.sortable-header:hover {
+  background-color: #f1f5f9;
+}
+
+.actions-header {
+  text-align: center;
+  background-color: #f8fafc;
+  padding: 16px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+*/
+
+/* ==========================================
+   DESPUÉS - Usando Sistema de Diseño Global
+   ========================================== */
+
+.sortable-header {
+  /* Variables del sistema en lugar de valores hardcodeados */
+  cursor: pointer;
+  user-select: var(--select-none, none);
+  transition: var(--transition-colors);
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+/* Específicamente para la columna de código */
+.sortable-header:first-child {
+  width: 100px;
+  max-width: 100px;
+}
+
+.sortable-header:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.actions-header {
+  /* Heredar la mayoría de estilos y solo cambiar lo específico */
+  /* Reutilizar las mismas propiedades que sortable-header */
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-colors);
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  text-align: center;
+}
+
+.actions-header:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+/* ==========================================
+   VERSIÓN OPTIMIZADA - Utilizando Clases Base
+   ========================================== */
+
+/* En lugar de usar @extend (SASS), podemos usar clases compuestas en HTML */
+/*
+HTML antes:
+<th class="sortable-header">Código</th>
+<th class="actions-header">Acciones</th>
+
+HTML después (usando clases del sistema):
+<th class="table-header cursor-pointer text-left">Código</th>
+<th class="table-header cursor-pointer text-center">Acciones</th>
+*/
+
+.sortable-header-optimized {
+  /* Reutilizar estilos base del sistema globals.css */
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  /* Modificaciones específicas */
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-colors);
+}
+
+.sortable-header-optimized:first-child {
+  width: 100px;
+  max-width: 100px;
+}
+
+.sortable-header-optimized:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+.actions-header-optimized {
+  /* Reutilizar estilos base del sistema globals.css */
+  background-color: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  /* Modificaciones específicas */
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  transition: var(--transition-colors);
+}
+
+.actions-header-optimized:hover {
+  background-color: var(--color-bg-tertiary);
+}
+
+/* ==========================================
+   VERSIÓN CON UTILIDADES (Preparación Tailwind)
+   ========================================== */
+
+/*
+En el HTML, en lugar de tener múltiples clases CSS,
+podríamos usar utilidades directamente:
+*/
+
+/*
+<th class="table-header cursor-pointer select-none text-left">
+  Código
+</th>
+
+<th class="table-header cursor-pointer select-none text-center">
+  Acciones
+</th>
+*/
+
+/* ==========================================
+   BENEFICIOS DE LA MIGRACIÓN
+   ========================================== */
+
+/*
+1. ✅ CONSISTENCIA:
+   - Todos los headers usan las mismas variables de color
+   - Mismo espaciado en toda la aplicación
+   - Transiciones consistentes
+
+2. ✅ MANTENIBILIDAD:
+   - Cambiar un color se hace en una sola variable
+   - Menos líneas de CSS
+   - Código más legible
+
+3. ✅ PREPARACIÓN TAILWIND:
+   - Variables mapean directamente a utilidades de Tailwind
+   - Estructura similar a las clases de Tailwind
+   - Fácil migración gradual
+
+4. ✅ ACCESIBILIDAD:
+   - Z-index consistente definido en el sistema
+   - Transiciones respetan prefers-reduced-motion
+   - Colores optimizados para contraste
+
+5. ✅ RESPONSIVE:
+   - Utilidades responsive incluidas
+   - Breakpoints consistentes
+   - Mobile-first approach
+*/

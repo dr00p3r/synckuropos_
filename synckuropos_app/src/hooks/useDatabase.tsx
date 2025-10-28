@@ -54,8 +54,8 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         setDb(dbInstance);
         
         // Init sample data
-        //const { initializeSampleData } = await import('../utils/sampleData');
-        //await initializeSampleData(dbInstance);
+        const { initializeSampleData } = await import('../utils/sampleData');
+        await initializeSampleData(dbInstance);
         console.log('✅ Base de datos inicializada correctamente');
 
         // Init replications
