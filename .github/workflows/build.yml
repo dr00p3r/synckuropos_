@@ -1,61 +1,19 @@
-name: Build and Analyze
-
+name: Build
 on:
   push:
     branches:
       - main
   pull_request:
-    branches:
-      - main
-
+    types: [opened, synchronize, reopened]
 jobs:
-  build:
-    name: Build and analyze
+  sonarqube:
+    name: SonarQube
     runs-on: ubuntu-latest
-    
     steps:
-      # 1. Checkout del código
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Necesario para SonarCloud
-
-      # 2. Configurar Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # 3. Instalar dependencias del frontend
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: ./synckuropos_app
-
-      # 4. Instalar dependencias del backend
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: ./synckuropos_server
-
-      # 5. Ejecutar tests del frontend
-      - name: Run frontend tests
-        run: npm run test -- --coverage --passWithNoTests
-        working-directory: ./synckuropos_app
-        continue-on-error: true
-
-      # 6. Ejecutar tests del backend
-      - name: Run backend tests
-        run: npm run test -- --coverage --passWithNoTests
-        working-directory: ./synckuropos_server
-        continue-on-error: true
-
-      # 7. SonarCloud Scan
-      - uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # 8. Quality Gate (opcional, falla si no pasa)
-      - uses: SonarSource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        continue-on-error: true
