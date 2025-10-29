@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "test": "jest --coverage",
+    "sonar": "sonar-scanner"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -19,7 +23,13 @@
     "rxdb": "^16.19.0",
     "rxdb-server": "^16.18.0",
     "rxjs": "^7.8.2",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "prettier": "^3.0.0",
+    "jest": "^29.0.0",
+    "sonarqube-scanner": "^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
