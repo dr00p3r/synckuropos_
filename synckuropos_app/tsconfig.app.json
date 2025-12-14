@@ -4,6 +4,7 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "jest", "@testing-library/jest-dom"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -36,7 +37,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "isolatedModules": true
   },
   "include": ["src"]
 }

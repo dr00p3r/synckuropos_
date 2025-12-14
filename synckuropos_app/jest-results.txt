@@ -1,0 +1,307 @@
+PASS src/features/reports/__tests__/schemas.test.ts
+PASS src/features/reports/__tests__/reports.test.ts
+PASS src/utils/__tests__/formatters.test.ts
+PASS src/contexts/__tests__/DateRangeContext.test.tsx
+FAIL src/hooks/__tests__/useToast.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m7[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m7[0m     expect(result.current.toast).toBeNull();
+    [7m [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m17[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m17[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m18[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m18[0m     if (result.current.toast) {
+    [7m  [0m [91m                       ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m19[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m19[0m       expect(result.current.toast.message).toBe('Success message');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m20[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m20[0m       expect(result.current.toast.type).toBe('success');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m31[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m31[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m32[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m32[0m     if (result.current.toast) {
+    [7m  [0m [91m                       ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m33[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m33[0m       expect(result.current.toast.message).toBe('Error message');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m34[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m34[0m       expect(result.current.toast.type).toBe('error');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m45[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m45[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m46[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m46[0m     if (result.current.toast) {
+    [7m  [0m [91m                       ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m47[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m47[0m       expect(result.current.toast.message).toBe('Warning message');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m48[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m48[0m       expect(result.current.toast.type).toBe('warning');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m59[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m59[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m60[0m:[93m24[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m60[0m     if (result.current.toast) {
+    [7m  [0m [91m                       ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m61[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m61[0m       expect(result.current.toast.message).toBe('Info message');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m62[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m62[0m       expect(result.current.toast.type).toBe('info');
+    [7m  [0m [91m                            ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m73[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m73[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m76[0m:[93m22[0m - [91merror[0m[90m TS2339: [0mProperty 'clearToast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m76[0m       result.current.clearToast();
+    [7m  [0m [91m                     ~~~~~~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m79[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m79[0m     expect(result.current.toast).toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m90[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m90[0m     expect(result.current.toast).not.toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+    [96msrc/hooks/__tests__/useToast.test.tsx[0m:[93m96[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'toast' does not exist on type '{ showSuccess: (message: string, duration?: number) => void; showError: (message: string, duration?: number) => void; showWarning: (message: string, duration?: number) => void; showInfo: (message: string, duration?: number) => void; show: (message: string, type?: "success" | ... 2 more ... | "info", duration?: numbe...'.
+
+    [7m96[0m     expect(result.current.toast).toBeNull();
+    [7m  [0m [91m                          ~~~~~[0m
+
+FAIL src/helpers/__tests__/replication.test.ts
+  ● Test suite failed to run
+
+    [96msrc/helpers/__tests__/replication.test.ts[0m:[93m80[0m:[93m24[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ products: { error$: { subscribe: jest.Mock<any, any, any>; }; outdatedClient$: { subscribe: jest.Mock<any, any, any>; }; unauthorized$: { subscribe: jest.Mock<any, any, any>; }; cancel: jest.Mock<...>; }; users: { error$: { subscribe: jest.Mock<any, any, any>; }; outdatedClient$: { subscribe: jest.Mock<any, any, a...' is not assignable to parameter of type 'Replications'.
+      Types of property 'products' are incompatible.
+        Type '{ error$: { subscribe: Mock<any, any, any>; }; outdatedClient$: { subscribe: Mock<any, any, any>; }; unauthorized$: { subscribe: Mock<any, any, any>; }; cancel: Mock<any, any, any>; }' is missing the following properties from type 'RxServerReplicationState<Product>': replicationIdentifier, collection, live, retryTime, and 30 more.
+
+    [7m80[0m       stopReplications(reps);
+    [7m  [0m [91m                       ~~~~[0m
+    [96msrc/helpers/__tests__/replication.test.ts[0m:[93m87[0m:[93m24[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ products: { error$: { subscribe: jest.Mock<any, any, any>; }; outdatedClient$: { subscribe: jest.Mock<any, any, any>; }; unauthorized$: { subscribe: jest.Mock<any, any, any>; }; cancel: jest.Mock<...>; }; users: { error$: { subscribe: jest.Mock<any, any, any>; }; outdatedClient$: { subscribe: jest.Mock<any, any, a...' is not assignable to parameter of type 'Replications'.
+      Types of property 'products' are incompatible.
+        Type '{ error$: { subscribe: Mock<any, any, any>; }; outdatedClient$: { subscribe: Mock<any, any, any>; }; unauthorized$: { subscribe: Mock<any, any, any>; }; cancel: Mock<any, any, any>; }' is missing the following properties from type 'RxServerReplicationState<Product>': replicationIdentifier, collection, live, retryTime, and 30 more.
+
+    [7m87[0m       stopReplications(reps);
+    [7m  [0m [91m                       ~~~~[0m
+
+FAIL src/features/auth/components/__tests__/LoginScreen.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/features/auth/components/__tests__/LoginScreen.test.tsx[0m:[93m23[0m:[93m25[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m23[0m     const { useAuth } = require('@/hooks/useAuth');
+    [7m  [0m [91m                        ~~~~~~~[0m
+    [96msrc/features/auth/components/__tests__/LoginScreen.test.tsx[0m:[93m24[0m:[93m26[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m24[0m     const { useToast } = require('@/hooks/useToast');
+    [7m  [0m [91m                         ~~~~~~~[0m
+    [96msrc/features/auth/components/__tests__/LoginScreen.test.tsx[0m:[93m139[0m:[93m25[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m139[0m     const { useAuth } = require('@/hooks/useAuth');
+    [7m   [0m [91m                        ~~~~~~~[0m
+
+FAIL src/features/customers/components/__tests__/CustomersScreen.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/features/customers/components/__tests__/CustomersScreen.test.tsx[0m:[93m100[0m:[93m34[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m100[0m     const mockUseCustomersData = require('@/features/customers/hooks/useCustomersData').useCustomersData;
+    [7m   [0m [91m                                 ~~~~~~~[0m
+    [96msrc/features/customers/components/__tests__/CustomersScreen.test.tsx[0m:[93m121[0m:[93m34[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m121[0m     const mockUseCustomersData = require('@/features/customers/hooks/useCustomersData').useCustomersData;
+    [7m   [0m [91m                                 ~~~~~~~[0m
+
+FAIL src/features/inventory/hooks/__tests__/useInventoryData.test.ts
+  ● Test suite failed to run
+
+    [96msrc/features/inventory/hooks/__tests__/useInventoryData.test.ts[0m:[93m63[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'getAllProducts' does not exist on type 'UseInventoryDataReturn'.
+
+    [7m63[0m         retrieved = await result.current.getAllProducts();
+    [7m  [0m [91m                                         ~~~~~~~~~~~~~~[0m
+    [96msrc/features/inventory/hooks/__tests__/useInventoryData.test.ts[0m:[93m79[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'getAllProducts' does not exist on type 'UseInventoryDataReturn'.
+
+    [7m79[0m         retrieved = await result.current.getAllProducts(true);
+    [7m  [0m [91m                                         ~~~~~~~~~~~~~~[0m
+    [96msrc/features/inventory/hooks/__tests__/useInventoryData.test.ts[0m:[93m96[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'createProduct' does not exist on type 'UseInventoryDataReturn'.
+
+    [7m96[0m         created = await result.current.createProduct(mockProduct);
+    [7m  [0m [91m                                       ~~~~~~~~~~~~~[0m
+    [96msrc/features/inventory/hooks/__tests__/useInventoryData.test.ts[0m:[93m117[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'updateProduct' does not exist on type 'UseInventoryDataReturn'.
+
+    [7m117[0m         updated = await result.current.updateProduct(updatedProduct);
+    [7m   [0m [91m                                       ~~~~~~~~~~~~~[0m
+
+FAIL src/features/customers/hooks/__tests__/useCustomersData.test.ts
+  ● Test suite failed to run
+
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m54[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'getAllCustomers' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m54[0m         customers = await result.current.getAllCustomers();
+    [7m  [0m [91m                                         ~~~~~~~~~~~~~~~[0m
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m70[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'getAllCustomers' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m70[0m         customers = await result.current.getAllCustomers(true);
+    [7m  [0m [91m                                         ~~~~~~~~~~~~~~~[0m
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m87[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'createCustomer' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m87[0m         created = await result.current.createCustomer(mockCustomer);
+    [7m  [0m [91m                                       ~~~~~~~~~~~~~~[0m
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m108[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'updateCustomer' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m108[0m         updated = await result.current.updateCustomer(updatedCustomer);
+    [7m   [0m [91m                                       ~~~~~~~~~~~~~~[0m
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m125[0m:[93m40[0m - [91merror[0m[90m TS2339: [0mProperty 'searchCustomers' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m125[0m         results = await result.current.searchCustomers('John');
+    [7m   [0m [91m                                       ~~~~~~~~~~~~~~~[0m
+    [96msrc/features/customers/hooks/__tests__/useCustomersData.test.ts[0m:[93m149[0m:[93m38[0m - [91merror[0m[90m TS2339: [0mProperty 'getCustomerDebts' does not exist on type 'UseCustomersDataReturn'.
+
+    [7m149[0m         debts = await result.current.getCustomerDebts('cust-123');
+    [7m   [0m [91m                                     ~~~~~~~~~~~~~~~~[0m
+
+FAIL src/features/inventory/components/__tests__/InventoryScreen.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/features/inventory/components/__tests__/InventoryScreen.test.tsx[0m:[93m90[0m:[93m34[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m90[0m     const mockUseInventoryData = require('@/features/inventory/hooks/useInventoryData').useInventoryData;
+    [7m  [0m [91m                                 ~~~~~~~[0m
+
+FAIL src/hooks/__tests__/useAuth.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/hooks/__tests__/useAuth.test.tsx[0m:[93m173[0m:[93m17[0m - [91merror[0m[90m TS2339: [0mProperty 'find' does not exist on type '{ findOne: Mock<any, any, any>; }'.
+
+    [7m173[0m       mockUsers.find = findMock;
+    [7m   [0m [91m                ~~~~[0m
+
+FAIL src/hooks/__tests__/useDatabase.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/hooks/__tests__/useDatabase.test.tsx[0m:[93m35[0m:[93m23[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m35[0m     const { getDb } = require('@/db');
+    [7m  [0m [91m                      ~~~~~~~[0m
+    [96msrc/hooks/__tests__/useDatabase.test.tsx[0m:[93m61[0m:[93m23[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m61[0m     const { getDb } = require('@/db');
+    [7m  [0m [91m                      ~~~~~~~[0m
+    [96msrc/hooks/__tests__/useDatabase.test.tsx[0m:[93m90[0m:[93m38[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m90[0m     const { initializeSampleData } = require('@/utils/sampleData');
+    [7m  [0m [91m                                     ~~~~~~~[0m
+    [96msrc/hooks/__tests__/useDatabase.test.tsx[0m:[93m106[0m:[93m35[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m106[0m     const { startReplications } = require('@/helpers/replication');
+    [7m   [0m [91m                                  ~~~~~~~[0m
+    [96msrc/hooks/__tests__/useDatabase.test.tsx[0m:[93m122[0m:[93m23[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m122[0m     const { getDb } = require('@/db');
+    [7m   [0m [91m                      ~~~~~~~[0m
+
+FAIL src/hooks/__tests__/useReportsKPIs.test.ts
+  ● Test suite failed to run
+
+    [96msrc/helpers/replication.ts[0m:[93m11[0m:[93m18[0m - [91merror[0m[90m TS1343: [0mThe 'import.meta' meta-property is only allowed when the '--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', or 'nodenext'.
+
+    [7m11[0m const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
+    [7m  [0m [91m                 ~~~~~~~~~~~[0m
+    [96msrc/helpers/replication.ts[0m:[93m11[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'env' does not exist on type 'ImportMeta'.
+
+    [7m11[0m const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
+    [7m  [0m [91m                             ~~~[0m
+
+FAIL src/__tests__/App.test.tsx
+  ● Test suite failed to run
+
+    [96msrc/__tests__/App.test.tsx[0m:[93m79[0m:[93m25[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m79[0m     const { useAuth } = require('@/hooks/useAuth');
+    [7m  [0m [91m                        ~~~~~~~[0m
+    [96msrc/__tests__/App.test.tsx[0m:[93m93[0m:[93m25[0m - [91merror[0m[90m TS2591: [0mCannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+
+    [7m93[0m     const { useAuth } = require('@/hooks/useAuth');
+    [7m  [0m [91m                        ~~~~~~~[0m
+
+FAIL src/shared/components/Toast/__tests__/ToastProvider.test.tsx (16.298 s)
+  ● ToastProvider Component › should auto-remove toast after duration
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      132 |   });
+      133 |
+    > 134 |   it('should auto-remove toast after duration', async () => {
+          |   ^
+      135 |     const user = userEvent.setup();
+      136 |     jest.useFakeTimers();
+      137 |
+
+      at src/shared/components/Toast/__tests__/ToastProvider.test.tsx:134:3
+      at Object.<anonymous> (src/shared/components/Toast/__tests__/ToastProvider.test.tsx:45:1)
+
+  ● ToastProvider Component › should remove toast on click
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      157 |   });
+      158 |
+    > 159 |   it('should remove toast on click', async () => {
+          |   ^
+      160 |     const user = userEvent.setup();
+      161 |     render(
+      162 |       <ToastProvider>
+
+      at src/shared/components/Toast/__tests__/ToastProvider.test.tsx:159:3
+      at Object.<anonymous> (src/shared/components/Toast/__tests__/ToastProvider.test.tsx:45:1)
+
+  ● ToastProvider Component › should support multiple toasts
+
+    thrown: "Exceeded timeout of 5000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      182 |   });
+      183 |
+    > 184 |   it('should support multiple toasts', async () => {
+          |   ^
+      185 |     const user = userEvent.setup();
+      186 |     render(
+      187 |       <ToastProvider>
+
+      at src/shared/components/Toast/__tests__/ToastProvider.test.tsx:184:3
+      at Object.<anonymous> (src/shared/components/Toast/__tests__/ToastProvider.test.tsx:45:1)
+
+Test Suites: 12 failed, 4 passed, 16 total
+Tests:       3 failed, 55 passed, 58 total
+Snapshots:   0 total
+Time:        17.633 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

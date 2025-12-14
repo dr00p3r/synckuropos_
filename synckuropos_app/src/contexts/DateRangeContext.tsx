@@ -17,7 +17,7 @@ export interface DateRangeContextType {
 }
 
 // Crear el contexto
-const DateRangeContext = createContext<DateRangeContextType | null>(null);
+export const DateRangeContext = createContext<DateRangeContextType | null>(null);
 
 // Utilidades para calcular rangos de fechas
 const getDateRangeForPreset = (preset: PresetKey): DateRange => {

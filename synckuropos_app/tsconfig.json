@@ -1,7 +1,12 @@
 {
-  "files": [],
+  "files": [
+    "src/setupTests.ts"
+  ],
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "verbatimModuleSyntax": false
+  }
 }
