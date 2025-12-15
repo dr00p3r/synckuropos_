@@ -21,6 +21,8 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.css$': '<rootDir>/src/__mocks__/styleMock.js',
     '^@schemas/(.*)$': '<rootDir>/../synckuropos_schemas/$1',
+    // AGREGADO: Mapeo para forzar el uso del mock de uuid
+    '^uuid$': '<rootDir>/src/__mocks__/uuid.js',
   },
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   transform: {

@@ -21,6 +21,7 @@
     "prettier": "^3.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "7.10.1",
     "recharts": "^3.2.1",
     "rxdb": "^16.19.0",
     "rxdb-server": "^16.18.0",

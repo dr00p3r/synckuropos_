@@ -1,4 +1,3 @@
-// src/replication.ts
 import { replicateServer, RxServerReplicationState } from 'rxdb-server/plugins/replication-server';
 import type { AppDatabase } from '../hooks/useDatabase';
 import type { Product, User } from '../types/types';
@@ -8,7 +7,19 @@ export type Replications = {
     users?: RxServerReplicationState<User>;
 };
 
-const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
+// FIX: Usar 'any' para evitar errores de compilación TS en modo test
+// En producción (Vite), import.meta.env estará definido.
+// En test (Jest), usamos el fallback.
+const getBaseUrl = () => {
+    try {
+        // @ts-ignore
+        return import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
+    } catch (e) {
+        return 'https://express-test.dr00p3r.top';
+    }
+};
+
+const BASE_URL = getBaseUrl();
 
 export async function startReplications(db: AppDatabase): Promise<Replications> {
     const reps: Replications = {};
@@ -20,8 +31,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
         url: `${BASE_URL}/products/0`,
         headers: {
             withCredentials: "false",
-            // Authorization: `Bearer ${token}`
-            // TODO: When server supports auth
         },
         push: {},
         pull: {},
@@ -36,8 +45,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
     });
     reps.products.unauthorized$?.subscribe(() => {
         console.warn('[products:replication] unauthorized — refresca token y setHeaders()');
-        // reps.products?.setHeaders({ Authorization: `Bearer ${refreshToken()}` });
-        // TODO: When server supports auth
     });
 
     // === Users ===
@@ -47,8 +54,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
         url: `${BASE_URL}/users/0`,
         headers: {
             withCredentials: "false",
-            // Authorization: `Bearer ${token}`
-            // TODO: When server supports auth
         },
         push: {},
         pull: {},
@@ -63,8 +68,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
     });
     reps.users.unauthorized$?.subscribe(() => {
         console.warn('[users:replication] unauthorized — refresca token y setHeaders()');
-        // reps.users?.setHeaders({ Authorization: `Bearer ${refreshToken()}` });
-        // TODO: When server supports auth
     });
 
     return reps;

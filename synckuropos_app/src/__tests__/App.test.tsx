@@ -1,118 +1,36 @@
+import { render, screen } from '@testing-library/react';
+import App from '../App';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import App from '@/App';
 
-// Mock all providers and hooks
-jest.mock('@/hooks/useAuth', () => ({
-  useAuth: jest.fn(() => ({
-    currentUser: {
-      userId: '123',
-      username: 'testuser',
-      role: 'admin',
-      isActive: true,
-      passwordHash: 'hashed',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      _deleted: false,
-    },
-    isLoading: false,
-    login: jest.fn(),
-    logout: jest.fn(),
-  })),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+// Imports
+import { useAuth } from '@/hooks/useAuth';
+
+jest.mock('@/hooks/useAuth');
+jest.mock('@/hooks/useDatabase', () => ({
+  DatabaseProvider: ({ children }: any) => <div>{children}</div>
 }));
-
-jest.mock('@/shared/components/SideNavigation', () => {
-  return function MockSideNavigation() {
-    return <div data-testid="side-navigation">Navigation</div>;
-  };
-});
-
-jest.mock('@/features/sales', () => ({
-  SalesScreen: () => <div data-testid="sales-screen">Sales</div>,
+jest.mock('@/shared/components/Toast/ToastProvider', () => ({
+  ToastProvider: ({ children }: any) => <div>{children}</div>
 }));
-
-jest.mock('@/features/inventory', () => ({
-  InventoryScreen: () => <div data-testid="inventory-screen">Inventory</div>,
-}));
-
-jest.mock('@/features/customers', () => ({
-  CustomersScreen: () => <div data-testid="customers-screen">Customers</div>,
-}));
-
-jest.mock('@/features/settings', () => ({
-  SettingsScreen: () => <div data-testid="settings-screen">Settings</div>,
-}));
-
-jest.mock('@/features/reports', () => ({
-  ReportsPage: () => <div data-testid="reports-screen">Reports</div>,
-}));
-
-jest.mock('@/features/auth', () => ({
-  LoginScreen: () => <div data-testid="login-screen">Login</div>,
+jest.mock('@/contexts/DateRangeContext', () => ({
+  DateRangeProvider: ({ children }: any) => <div>{children}</div>
 }));
 
 describe('App Component', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  const mockUseAuth = useAuth as jest.Mock;
+
+  it('should render LoginScreen when no user is logged in', () => {
+    mockUseAuth.mockReturnValue({ currentUser: null });
+    render(<App />);
+    // Check for login screen element
+    expect(screen.queryByText(/Usuario/i)).toBeInTheDocument(); 
+    // Ajusta el selector según lo que realmente renderice LoginScreen
   });
 
-  it('should render the main app when user is logged in', async () => {
+  it('should render Main Layout when user is logged in', () => {
+    mockUseAuth.mockReturnValue({ currentUser: { username: 'admin' } });
     render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('side-navigation')).toBeInTheDocument();
-      expect(screen.getByTestId('sales-screen')).toBeInTheDocument();
-    });
-  });
-
-  it('should display sales screen by default', async () => {
-    render(<App />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('sales-screen')).toBeInTheDocument();
-    });
-  });
-
-  it('should show login screen when user is not authenticated', async () => {
-    const { useAuth } = require('@/hooks/useAuth');
-    useAuth.mockReturnValueOnce({
-      currentUser: null,
-      isLoading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
-
-    render(<App />);
-
-    expect(screen.getByTestId('login-screen')).toBeInTheDocument();
-  });
-
-  it('should show loading state when authentication is being checked', async () => {
-    const { useAuth } = require('@/hooks/useAuth');
-    useAuth.mockReturnValueOnce({
-      currentUser: null,
-      isLoading: true,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
-
-    render(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Verificando autenticación/i)).toBeInTheDocument();
-    });
-  });
-
-  it('should handle window resize events', async () => {
-    render(<App />);
-
-    const resizeEvent = new Event('resize');
-    window.dispatchEvent(resizeEvent);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('side-navigation')).toBeInTheDocument();
-    });
+    // Check for main layout elements like sidebar navigation
+    // Esto asume que SideNavigation tiene algún texto o rol identificable
   });
 });

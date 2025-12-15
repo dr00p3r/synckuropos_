@@ -1,9 +1,14 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useInventoryData } from '@/features/inventory/hooks/useInventoryData';
 import { useDatabase } from '@/hooks/useDatabase';
 
 jest.mock('@/hooks/useDatabase');
-jest.mock('@/hooks/useToast');
+jest.mock('@/hooks/useToast', () => ({
+  useToast: () => ({
+    showError: jest.fn(),
+    showSuccess: jest.fn(),
+  }),
+}));
 
 describe('useInventoryData', () => {
   const mockUseDatabase = useDatabase as jest.Mock;
@@ -11,113 +16,70 @@ describe('useInventoryData', () => {
   const mockProducts = {
     find: jest.fn(),
     findOne: jest.fn(),
-    insert: jest.fn(),
-    update: jest.fn(),
   };
 
   const mockDbReturn = {
     products: mockProducts,
   };
 
+  // Mock completo que cumple con la interfaz Product
   const mockProduct = {
     productId: 'prod-123',
     code: 'CODE123',
     name: 'Test Product',
     stock: 100,
     basePrice: 5000,
-    allowDecimalQuantity: false,
-    isTaxable: true,
     isActive: true,
+    isTaxable: true,
+    allowDecimalQuantity: false,
+    _deleted: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    toJSON: function() { return this; }
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseDatabase.mockReturnValue(mockDbReturn);
+    mockProducts.find.mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+            exec: jest.fn().mockResolvedValue([ { toJSON: () => mockProduct } ])
+        })
+    });
   });
 
   describe('initialization', () => {
-    it('should initialize with empty products', async () => {
-      mockProducts.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue([]),
-      });
-
+    it('should load products on mount', async () => {
       const { result } = renderHook(() => useInventoryData());
 
-      expect(result.current).toBeDefined();
+      await waitFor(() => {
+          expect(result.current.loading).toBe(false);
+      });
+
+      expect(result.current.products).toHaveLength(1);
     });
   });
 
-  describe('getAllProducts', () => {
-    it('should retrieve all products', async () => {
-      const products = [mockProduct];
-      mockProducts.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(products.map(p => ({ toJSON: () => p }))),
-      });
-
-      const { result } = renderHook(() => useInventoryData());
-
-      let retrieved: any[] = [];
-      await act(async () => {
-        retrieved = await result.current.getAllProducts();
-      });
-
-      expect(retrieved).toHaveLength(1);
-    });
-
-    it('should retrieve only active products when requested', async () => {
-      const products = [mockProduct, { ...mockProduct, isActive: false }];
-      mockProducts.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue([{ toJSON: () => mockProduct }]),
-      });
-
-      const { result } = renderHook(() => useInventoryData());
-
-      let retrieved: any[] = [];
-      await act(async () => {
-        retrieved = await result.current.getAllProducts(true);
-      });
-
-      expect(retrieved).toHaveLength(1);
-    });
-  });
-
-  describe('createProduct', () => {
-    it('should create a new product', async () => {
-      mockProducts.insert.mockResolvedValue({
-        toJSON: () => mockProduct,
-      });
-
-      const { result } = renderHook(() => useInventoryData());
-
-      let created: any = null;
-      await act(async () => {
-        created = await result.current.createProduct(mockProduct);
-      });
-
-      expect(mockProducts.insert).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateProduct', () => {
-    it('should update an existing product', async () => {
-      const updatedProduct = { ...mockProduct, stock: 150 };
+  describe('toggleProductStatus', () => {
+    it('should toggle product active status', async () => {
+      const updateMock = jest.fn().mockResolvedValue({});
       mockProducts.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          toJSON: () => mockProduct,
-          update: jest.fn().mockResolvedValue({}),
+          update: updateMock,
         }),
       });
 
       const { result } = renderHook(() => useInventoryData());
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      let updated = false;
       await act(async () => {
-        updated = await result.current.updateProduct(updatedProduct);
+        await result.current.toggleProductStatus(mockProduct);
       });
 
-      expect(updated).toBe(true);
+      expect(mockProducts.findOne).toHaveBeenCalledWith({
+          selector: { productId: mockProduct.productId }
+      });
+      expect(updateMock).toHaveBeenCalled();
     });
   });
 });
