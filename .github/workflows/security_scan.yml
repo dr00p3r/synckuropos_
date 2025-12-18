@@ -1,4 +1,43 @@
-- name: Send to Analysis API
+name: Security Scan (Microservice Guard)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - testing  # <--- 1. Solo se activa si el PR va dirigido a 'testing'
+
+jobs:
+  analyze_code:
+    name: Analyze Code Integrity
+    runs-on: ubuntu-latest
+    # 2. Solo ejecuta el trabajo si la rama de origen es 'dev'
+    if: github.head_ref == 'dev' 
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Get Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **.py
+            **.js
+            **.java
+            **.cpp
+
+      - name: Send to Analysis API
         env:
           API_URL: ${{ secrets.ANALYSIS_API_URL }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
