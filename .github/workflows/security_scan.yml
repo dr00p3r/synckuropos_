@@ -3,11 +3,16 @@ name: Security Scan (Microservice Guard)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches:
+      - test  # <--- 1. Solo se activa si el PR va dirigido a 'test'
 
 jobs:
   analyze_code:
     name: Analyze Code Integrity
     runs-on: ubuntu-latest
+    # 2. Solo ejecuta el trabajo si la rama de origen es 'dev'
+    if: github.head_ref == 'dev' 
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -36,7 +41,6 @@ jobs:
         env:
           API_URL: ${{ secrets.ANALYSIS_API_URL }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-          # Capturamos el título del PR desde el contexto de GitHub
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           python - <<EOF
@@ -58,7 +62,6 @@ jobs:
           for file_path in files_list:
               try:
                   ext = os.path.splitext(file_path)[1]
-                  # Mapeo simple de extensión a lenguaje
                   lang_map = {".py": "python", ".js": "javascript", ".cpp": "cpp", ".java": "java"}
                   lang = lang_map.get(ext, "unknown")
 
@@ -76,10 +79,10 @@ jobs:
           if not code_payloads:
               sys.exit(0)
 
-          # 2. Construir el AnalysisRequest (JSON nuevo)
+          # 2. Construir el AnalysisRequest
           payload = {
               "pr_title": pr_title,
-              "telegram_chat_id": None, # Opcional: poner ID si quieres overridear el del servidor
+              "telegram_chat_id": None, 
               "files": code_payloads
           }
 
