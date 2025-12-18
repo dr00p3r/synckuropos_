@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - test  # <--- 1. Solo se activa si el PR va dirigido a 'test'
+      - testing  # <--- 1. Solo se activa si el PR va dirigido a 'testing'
 
 jobs:
   analyze_code:
