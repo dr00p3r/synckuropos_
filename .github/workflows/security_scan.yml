@@ -4,14 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - testing  # <--- 1. Solo se activa si el PR va dirigido a 'testing'
+      - testing
 
 jobs:
   analyze_code:
     name: Analyze Code Integrity
     runs-on: ubuntu-latest
-    # 2. Solo ejecuta el trabajo si la rama de origen es 'dev'
-    if: github.head_ref == 'dev' 
+    if: github.head_ref == 'dev'
     
     steps:
       - name: Checkout Code
@@ -40,6 +39,8 @@ jobs:
       - name: Send to Analysis API
         env:
           API_URL: ${{ secrets.ANALYSIS_API_URL }}
+          # 1. AQUÍ INYECTAMOS EL SECRET DE TELEGRAM
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
@@ -49,7 +50,9 @@ jobs:
           import requests
           import sys
 
+          # --- CONFIGURACIÓN ---
           api_url = os.environ.get("API_URL")
+          telegram_id = os.environ.get("TELEGRAM_CHAT_ID") # Leemos el ID (puede ser None si no hay secret)
           files_list = os.environ.get("CHANGED_FILES", "").split()
           pr_title = os.environ.get("PR_TITLE", "Unknown PR")
 
@@ -57,7 +60,7 @@ jobs:
               print("No relevant files changed.")
               sys.exit(0)
 
-          # --- 1. Preparar Payload (igual que antes) ---
+          # --- 1. CONSTRUIR LISTA DE ARCHIVOS ---
           code_payloads = []
           for file_path in files_list:
               try:
@@ -79,18 +82,21 @@ jobs:
           if not code_payloads:
               sys.exit(0)
 
+          # --- 2. CONSTRUIR PAYLOAD CON TELEGRAM ---
           payload = {
               "pr_title": pr_title,
-              "telegram_chat_id": None, 
+              "telegram_chat_id": telegram_id,  # Aquí pasamos el ID al backend
               "files": code_payloads
           }
 
-          # --- 2. Enviar y Analizar Respuesta ---
+          # --- 3. ENVIAR Y PROCESAR RESPUESTA ---
           try:
-              print(f"Sending {len(code_payloads)} files to {api_url}...")
+              print(f"Sending {len(code_payloads)} files to API...")
+              if telegram_id:
+                  print(f"Notification enabled for Telegram ID ending in ...{telegram_id[-3:]}")
+                  
               response = requests.post(f"{api_url}/analyze", json=payload, timeout=60)
               
-              # Debug básico por si falla la API
               if response.status_code != 200:
                   print(f"::error::API Error {response.status_code}: {response.text}")
                   sys.exit(1)
@@ -100,10 +106,8 @@ jobs:
               # Variables de control
               block_pr = False
               manual_review = False
-              
               results = data.get("results", [])
               
-              # --- 3. Lógica de Validación Profunda ---
               print("Analizando resultados detallados...")
               
               for res in results:
@@ -112,41 +116,39 @@ jobs:
                   
                   for func in functions:
                       fname = func.get("function_name", "unknown")
-                      
-                      # Extraer datos clave
                       prediction = func.get("codebert_prediction", {})
                       label = prediction.get("label", "Safe") 
-                      findings = func.get("findings", []) # Lista de hallazgos extra
+                      findings = func.get("findings", []) 
                       
-                      # REGLA 1: Bloquear si hay findings O si el label es peligroso (distinto de Safe y Other)
+                      # REGLA 1: Bloquear si es peligroso o tiene findings
                       is_dangerous = (label != "Safe" and label != "Other")
                       has_findings = (len(findings) > 0)
                       
                       if is_dangerous or has_findings:
-                          print(f"::error file={filename},title=Security Vulnerability::Función '{fname}' detectada como {label} o tiene findings.")
+                          print(f"::error file={filename},title=Critical Vulnerability::Función '{fname}' detectada como {label}.")
                           block_pr = True
                           
-                      # REGLA 2: Si es "Other", advertir pero NO bloquear (Petición de 'pendiente')
+                      # REGLA 2: Advertir si es "Other"
                       elif label == "Other":
-                          print(f"::warning file={filename},title=Manual Review Needed::Función '{fname}' clasificada como 'Other'. Revisar manualmente.")
+                          print(f"::warning file={filename},title=Manual Review::Función '{fname}' marcada como 'Other'.")
                           manual_review = True
                       
                       else:
-                          print(f"OK: {filename} - {fname} -> {label}")
+                          print(f"OK: {filename} -> {label}")
 
-              # --- 4. Decisión Final ---
+              # --- 4. DECISIÓN FINAL ---
               if block_pr:
-                  print("❌ BLOQUEANDO PR: Se encontraron vulnerabilidades críticas.")
-                  sys.exit(1) # Esto pone el check en ROJO y bloquea el merge
+                  print("❌ BLOQUEANDO PR: Vulnerabilidades críticas detectadas.")
+                  sys.exit(1)
               
               if manual_review:
-                  print("⚠️ PR APROBADO CON ADVERTENCIAS: Se detectaron etiquetas 'Other'.")
-                  sys.exit(0) # Esto pone el check en VERDE, pero con warnings visibles
+                  print("⚠️ APROBADO CON ADVERTENCIAS.")
+                  sys.exit(0)
                   
-              print("✅ Security Check Passed Cleanly.")
+              print("✅ Security Check Passed.")
               sys.exit(0)
 
           except Exception as e:
-              print(f"CRITICAL ERROR executing script: {e}")
+              print(f"CRITICAL ERROR: {e}")
               sys.exit(1)
           EOF
