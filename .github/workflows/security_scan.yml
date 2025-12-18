@@ -1,0 +1,101 @@
+name: Security Scan (Microservice Guard)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  analyze_code:
+    name: Analyze Code Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para comparar cambios
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      # Paso clave: Obtener lista de archivos modificados
+      - name: Get Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **.py
+            **.js
+            **.java
+            **.cpp
+            # Agrega aquí las extensiones que tu modelo soporte
+
+      # EL PUENTE: Script que lee archivos y habla con tu Microservicio
+      - name: Send to Analysis API
+        env:
+          # URL de tu microservicio desplegado (no localhost)
+          API_URL: ${{ secrets.ANALYSIS_API_URL }} 
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: |
+          python - <<EOF
+          import os
+          import json
+          import requests
+          import sys
+
+          api_url = os.environ.get("API_URL")
+          files_list = os.environ.get("CHANGED_FILES", "").split()
+
+          if not files_list:
+              print("No relevant files changed. Skipping analysis.")
+              sys.exit(0)
+
+          code_snippets = []
+          print(f"Analyzing {len(files_list)} files...")
+
+          # 1. Leer archivos y convertirlos a Strings
+          for file_path in files_list:
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      content = f.read()
+                      # Opcional: Agregar metadatos o nombre del archivo si tu modelo lo soporta
+                      code_snippets.append(content)
+              except Exception as e:
+                  print(f"Error reading {file_path}: {e}")
+
+          if not code_snippets:
+              print("No content to analyze.")
+              sys.exit(0)
+
+          # 2. Enviar al Microservicio (analysis_api)
+          # Ajusta la clave 'code' según lo que espere tu Pydantic model
+          payload = {"code": code_snippets} 
+          
+          try:
+              response = requests.post(f"{api_url}/analyze", json=payload, timeout=30)
+              response.raise_for_status()
+              result = response.json()
+              
+              print("Analysis Result:", result)
+
+              # 3. Lógica de Bloqueo (Ajustar según tu respuesta JSON)
+              # Asumo que tu API devuelve algo como {"status": "vulnerable"} o {"is_safe": False}
+              
+              is_safe = result.get("is_safe", True) # Por defecto True si no viene la llave
+              
+              if not is_safe:
+                  print("::error::Security Vulnerability Detected! PR Rejected.")
+                  sys.exit(1) # Esto hace fallar al GitHub Action y bloquea el merge
+              else:
+                  print("Code is safe.")
+                  sys.exit(0)
+
+          except requests.exceptions.RequestException as e:
+              print(f"Failed to connect to Microservice: {e}")
+              # Decidir si fallar (seguro) o pasar (ignorar error)
+              sys.exit(1) 
+          EOF
