@@ -1,43 +1,4 @@
-name: Security Scan (Microservice Guard)
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - testing  # <--- 1. Solo se activa si el PR va dirigido a 'testing'
-
-jobs:
-  analyze_code:
-    name: Analyze Code Integrity
-    runs-on: ubuntu-latest
-    # 2. Solo ejecuta el trabajo si la rama de origen es 'dev'
-    if: github.head_ref == 'dev' 
-    
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Install Dependencies
-        run: pip install requests
-
-      - name: Get Changed Files
-        id: changed-files
-        uses: tj-actions/changed-files@v44
-        with:
-          files: |
-            **.py
-            **.js
-            **.java
-            **.cpp
-
-      - name: Send to Analysis API
+- name: Send to Analysis API
         env:
           API_URL: ${{ secrets.ANALYSIS_API_URL }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
@@ -57,7 +18,7 @@ jobs:
               print("No relevant files changed.")
               sys.exit(0)
 
-          # 1. Construir la lista de objetos CodePayload
+          # --- 1. Preparar Payload (igual que antes) ---
           code_payloads = []
           for file_path in files_list:
               try:
@@ -79,31 +40,74 @@ jobs:
           if not code_payloads:
               sys.exit(0)
 
-          # 2. Construir el AnalysisRequest
           payload = {
               "pr_title": pr_title,
               "telegram_chat_id": None, 
               "files": code_payloads
           }
 
-          # 3. Enviar
+          # --- 2. Enviar y Analizar Respuesta ---
           try:
               print(f"Sending {len(code_payloads)} files to {api_url}...")
               response = requests.post(f"{api_url}/analyze", json=payload, timeout=60)
-              response.raise_for_status()
+              
+              # Debug básico por si falla la API
+              if response.status_code != 200:
+                  print(f"::error::API Error {response.status_code}: {response.text}")
+                  sys.exit(1)
               
               data = response.json()
-              print("API Response Summary:", data.get("summary_msg"))
+              
+              # Variables de control
+              block_pr = False
+              manual_review = False
+              
+              results = data.get("results", [])
+              
+              # --- 3. Lógica de Validación Profunda ---
+              print("Analizando resultados detallados...")
+              
+              for res in results:
+                  filename = res.get("filename", "unknown")
+                  functions = res.get("functions", [])
+                  
+                  for func in functions:
+                      fname = func.get("function_name", "unknown")
+                      
+                      # Extraer datos clave
+                      prediction = func.get("codebert_prediction", {})
+                      label = prediction.get("label", "Safe") 
+                      findings = func.get("findings", []) # Lista de hallazgos extra
+                      
+                      # REGLA 1: Bloquear si hay findings O si el label es peligroso (distinto de Safe y Other)
+                      is_dangerous = (label != "Safe" and label != "Other")
+                      has_findings = (len(findings) > 0)
+                      
+                      if is_dangerous or has_findings:
+                          print(f"::error file={filename},title=Security Vulnerability::Función '{fname}' detectada como {label} o tiene findings.")
+                          block_pr = True
+                          
+                      # REGLA 2: Si es "Other", advertir pero NO bloquear (Petición de 'pendiente')
+                      elif label == "Other":
+                          print(f"::warning file={filename},title=Manual Review Needed::Función '{fname}' clasificada como 'Other'. Revisar manualmente.")
+                          manual_review = True
+                      
+                      else:
+                          print(f"OK: {filename} - {fname} -> {label}")
 
-              # 4. Bloquear PR si no es seguro
-              if not data.get("is_pr_safe", True):
-                  print("::error::Security Check Failed! Vulnerabilities detected.")
-                  sys.exit(1)
-              else:
-                  print("✅ Security Check Passed.")
-                  sys.exit(0)
+              # --- 4. Decisión Final ---
+              if block_pr:
+                  print("❌ BLOQUEANDO PR: Se encontraron vulnerabilidades críticas.")
+                  sys.exit(1) # Esto pone el check en ROJO y bloquea el merge
+              
+              if manual_review:
+                  print("⚠️ PR APROBADO CON ADVERTENCIAS: Se detectaron etiquetas 'Other'.")
+                  sys.exit(0) # Esto pone el check en VERDE, pero con warnings visibles
+                  
+              print("✅ Security Check Passed Cleanly.")
+              sys.exit(0)
 
           except Exception as e:
-              print(f"CRITICAL ERROR: {e}")
+              print(f"CRITICAL ERROR executing script: {e}")
               sys.exit(1)
           EOF
