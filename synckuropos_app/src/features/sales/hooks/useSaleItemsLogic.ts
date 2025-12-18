@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useToast } from '../../../hooks/useToast';
+import { toCents, toDollars, safeParseNumber } from '@/utils/money';
 import type { SaleItem } from '../../../types/types';
 
 interface UseSaleItemsLogicProps {
@@ -120,8 +121,8 @@ export const useSaleItemsLogic = ({
 
   // Handle quantity input blur validation
   const handleQuantityBlur = (productId: string, value: string) => {
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && numericValue > 0) {
+    const numericValue = safeParseNumber(value);
+    if (numericValue > 0) {
       updateItemQuantity(productId, numericValue);
     }
     // Clear temporary state
@@ -149,10 +150,12 @@ export const useSaleItemsLogic = ({
   };
 
   // Handle total price input blur validation
+  // User input is in dollars, need to convert to cents for updateItemTotalPrice
   const handleTotalPriceBlur = (productId: string, value: string) => {
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && numericValue > 0) {
-      updateItemTotalPrice(productId, numericValue);
+    const dollarValue = safeParseNumber(value);
+    if (dollarValue > 0) {
+      const centsValue = toCents(dollarValue);
+      updateItemTotalPrice(productId, centsValue);
     }
     // Clear temporary state
     setEditingTotalPrice(prev => {
@@ -163,10 +166,11 @@ export const useSaleItemsLogic = ({
   };
 
   // Handle total price input focus
-  const handleTotalPriceFocus = (productId: string, currentTotalPrice: number) => {
+  // currentTotalPrice is in cents, need to convert to dollars for display
+  const handleTotalPriceFocus = (productId: string, currentTotalPriceCents: number) => {
     setEditingTotalPrice(prev => ({
       ...prev,
-      [productId]: currentTotalPrice.toFixed(2)
+      [productId]: toDollars(currentTotalPriceCents).toFixed(2)
     }));
   };
 

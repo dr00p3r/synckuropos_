@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useRxQuery, useRxCollection } from 'rxdb-hooks';
 import { useDatabase } from '@/hooks/useDatabase';
 import { useToast } from '@/hooks/useToast';
 import { v4 as uuidv4 } from 'uuid';
+import { toCents, toDollars, calculatePercentage, formatMoney } from '@/utils/money';
 
 import { useAuth } from '@/hooks/useAuth';
 
@@ -27,19 +29,19 @@ interface UsePaymentLogicReturn {
   handleConfirmPurchase: () => Promise<void>;
 }
 
-export const usePaymentLogic = ({ 
-  saleItems, 
-  summary, 
-  onSaleCompleted 
+export const usePaymentLogic = ({
+  saleItems,
+  summary,
+  onSaleCompleted
 }: UsePaymentLogicProps): UsePaymentLogicReturn => {
   // Payment states
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [receivedAmount, setReceivedAmount] = useState<string>('');
   const [isCredit, setIsCredit] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
-  
+
   // Hooks
+  const customersCollection = useRxCollection('customers');
   const db = useDatabase();
   const toast = useToast();
   const { currentUser } = useAuth();
@@ -47,30 +49,21 @@ export const usePaymentLogic = ({
   // Constants
   const TAX_RATE = 0.15; // 15% IVA
 
-  // Load customers on component mount
-  useEffect(() => {
-    const loadCustomers = async () => {
-      try {
-        const allCustomers = await db.customers.find({
-          selector: { isActive: true }
-        }).exec();
-        
-        const customersData = allCustomers.map((doc: any) => doc.toJSON());
-        setCustomers(customersData);
-      } catch (error) {
-        console.error('Error loading customers:', error);
-      }
-    };
+  // Reactive customer query
+  const customersQuery = useMemo(() => {
+    if (!customersCollection) return null;
+    return customersCollection.find({ selector: { isActive: true } });
+  }, [customersCollection]);
 
-    loadCustomers();
-  }, [db]);
+  const { result: customers } = useRxQuery(customersQuery);
 
   // Get selected customer
-  const selectedCustomer = customers.find(customer => customer.customerId === selectedCustomerId);
+  const selectedCustomer = customers?.find(customer => customer.customerId === selectedCustomerId);
 
-  // Calculate change
-  const receivedAmountNum = parseFloat(receivedAmount) * 100 || 0;
-  const changeAmount = receivedAmountNum - summary.total;
+  // Calculate change (converting summary.total from dollars to cents)
+  const receivedAmountCents = toCents(receivedAmount);
+  const totalCents = toCents(summary.total);
+  const changeAmount = receivedAmountCents - totalCents;
 
   // Confirm purchase
   const handleConfirmPurchase = async () => {
@@ -79,10 +72,11 @@ export const usePaymentLogic = ({
       return;
     }
 
-    const receivedAmountNum = parseFloat(receivedAmount) * 100 || 0; // Convert to cents
+    const receivedAmountCents = toCents(receivedAmount);
+    const totalCents = toCents(summary.total);
 
-    // Validate payment
-    if (!isCredit && receivedAmountNum < summary.total) {
+    // Validate payment (both in cents)
+    if (!isCredit && receivedAmountCents < totalCents) {
       toast.showError('El monto recibido debe ser mayor o igual al total de la venta');
       return;
     }
@@ -106,12 +100,12 @@ export const usePaymentLogic = ({
         return;
       }
 
-      // Create sale
+      // Create sale (totalCents already in cents from summary.total conversion)
       const sale: Sale = {
         saleId: uuidv4(),
         userId: currentUser.userId,
         customerId: selectedCustomer?.customerId!,
-        totalAmount: Math.round(summary.total * 100), // Convert to cents
+        totalAmount: totalCents, // Already in cents
         isActive: true,
         _deleted: false,
         isPartOfDebt: isCredit,
@@ -122,20 +116,20 @@ export const usePaymentLogic = ({
 
       await db.sales.insert(sale);
 
-      // Create sale details
+      // Create sale details (item prices are already in cents)
       for (const item of saleItems) {
-        const taxAmount = item.totalPrice * TAX_RATE;
-        const subtotal = item.totalPrice;
+        const taxAmount = calculatePercentage(item.totalPrice, TAX_RATE);
+        const subtotal = item.totalPrice; // Already in cents
         const lineTotal = subtotal + taxAmount;
 
         const saleDetail: SaleDetail = {
           saleId: sale.saleId!,
           productId: item.productId!,
           quantity: item.quantity,
-          unitPrice: Math.round(item.unitPrice * 100), // Convert to cents
-          subtotal: Math.round(subtotal * 100),
-          taxAmount: Math.round(taxAmount * 100),
-          lineTotal: Math.round(lineTotal * 100),
+          unitPrice: item.unitPrice, // Already in cents
+          subtotal: subtotal, // Already in cents
+          taxAmount: taxAmount, // Already in cents
+          lineTotal: lineTotal, // Already in cents
           _deleted: false
         };
 
@@ -144,13 +138,13 @@ export const usePaymentLogic = ({
 
       // If it's a credit sale, create debt and payment
       if (isCredit && selectedCustomer) {
-        const debtAmount = Math.round((summary.total - receivedAmountNum) * 100); // Convert to cents
+        const debtAmountCents = totalCents - receivedAmountCents; // Both already in cents
 
-        if (debtAmount > 0) {
+        if (debtAmountCents > 0) {
           const debt: Debt = {
             debtId: uuidv4(),
             customerId: selectedCustomer.customerId!,
-            amount: debtAmount,
+            amount: debtAmountCents, // Already in cents
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             _deleted: false
@@ -159,12 +153,12 @@ export const usePaymentLogic = ({
           await db.debts.insert(debt);
 
           // If there was partial payment, create payment record
-          if (receivedAmountNum > 0) {
+          if (receivedAmountCents > 0) {
             const payment: DebtPayment = {
               debtPaymentId: uuidv4(),
               debtId: debt.debtId!,
               userId: currentUser.userId,
-              amountPaid: Math.round(receivedAmountNum * 100), // Convert to cents
+              amountPaid: receivedAmountCents, // Already in cents
               paymentDate: new Date().toISOString(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -178,18 +172,17 @@ export const usePaymentLogic = ({
 
       // Show success message
       if (isCredit) {
-        const paidAmount = receivedAmountNum;
-        const debtAmount = summary.total - paidAmount;
-        
-        if (debtAmount > 0) {
+        const debtAmountCents = totalCents - receivedAmountCents;
+
+        if (debtAmountCents > 0) {
           toast.showSuccess(
-            `Venta fiada registrada. Pagado: $${paidAmount.toFixed(2)}, Debe: $${debtAmount.toFixed(2)}`
+            `Venta fiada registrada. Pagado: ${formatMoney(receivedAmountCents)}, Debe: ${formatMoney(debtAmountCents)}`
           );
         } else {
-          toast.showSuccess(`Venta completada por $${summary.total.toFixed(2)}`);
+          toast.showSuccess(`Venta completada por ${formatMoney(totalCents)}`);
         }
       } else {
-        toast.showSuccess(`Venta completada. Cambio: $${changeAmount.toFixed(2)}`);
+        toast.showSuccess(`Venta completada. Cambio: ${formatMoney(changeAmount)}`);
       }
 
       // Clear the sale
@@ -204,7 +197,7 @@ export const usePaymentLogic = ({
   };
 
   return {
-    customers,
+    customers: customers || [],
     selectedCustomerId,
     setSelectedCustomerId,
     receivedAmount,

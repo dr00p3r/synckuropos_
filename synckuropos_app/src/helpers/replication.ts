@@ -13,7 +13,6 @@ const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.d
 export async function startReplications(db: AppDatabase): Promise<Replications> {
     const reps: Replications = {};
 
-    // === Products ===
     reps.products = await replicateServer<Product>({
         collection: db.collections.products,
         replicationIdentifier: 'products-replication-v0',

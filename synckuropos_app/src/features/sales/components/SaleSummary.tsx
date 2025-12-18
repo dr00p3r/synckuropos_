@@ -1,4 +1,5 @@
 import React from 'react';
+import { CreditCard, Receipt } from 'lucide-react';
 import type { SaleItem, SaleSummary as SaleSummaryType } from '../../../types/types';
 import './SaleSummary.css';
 
@@ -45,12 +46,16 @@ export const SaleSummary: React.FC<SaleSummaryProps> = ({
         </div>
       </div>
 
-      <button 
+      <button
         className="complete-sale-button"
         onClick={onCompleteSale}
+        title="Completar pago (F9)"
       >
-        <div className="button-top">Completar Pago</div>
-        <div className="button-bottom">${summary.total.toFixed(2)}</div>
+        <CreditCard size={20} className="button-icon" />
+        <div className="button-content">
+          <div className="button-top">Completar Pago</div>
+          <div className="button-bottom">${summary.total.toFixed(2)}</div>
+        </div>
       </button>
     </>
   );

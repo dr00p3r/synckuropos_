@@ -1,5 +1,6 @@
 import React from 'react';
 import type { StockAdjustmentTabProps } from './ProductModalTypes';
+import { safeParseNumber, isValidNumber, formatMoney } from '@/utils/money';
 import './StockAdjustmentTab.css';
 
 export const StockAdjustmentTab: React.FC<StockAdjustmentTabProps> = ({
@@ -9,22 +10,8 @@ export const StockAdjustmentTab: React.FC<StockAdjustmentTabProps> = ({
   onStockMovement,
   loading
 }) => {
-  // Función para convertir string a número, manejando valores vacíos
-  const parseNumber = (value: string): number => {
-    if (value === '' || value === undefined || value === null) return 0;
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
-  };
-
-  // Función para validar que un campo numérico tenga un valor válido
-  const isValidNumber = (value: string): boolean => {
-    if (value === '') return false;
-    const parsed = parseFloat(value);
-    return !isNaN(parsed);
-  };
-
-  const isValidMovement = isValidNumber(stockData.quantityToMove) && 
-                         parseNumber(stockData.quantityToMove) !== 0;
+  const isValidMovement = isValidNumber(stockData.quantityToMove) &&
+                         safeParseNumber(stockData.quantityToMove) !== 0;
 
   return (
     <div className="stock-form">
@@ -36,7 +23,7 @@ export const StockAdjustmentTab: React.FC<StockAdjustmentTabProps> = ({
         </div>
         <div className="stock-info-right">
           <h3>Precio Actual</h3>
-          <div className="price-value">${(currentProduct.basePrice / 100).toFixed(2)}</div>
+          <div className="price-value">{formatMoney(currentProduct.basePrice)}</div>
           <p>por unidad</p>
         </div>
       </div>

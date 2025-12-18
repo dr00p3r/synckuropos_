@@ -1,5 +1,7 @@
 import React from 'react';
+import { ArrowLeft, DollarSign, User, CheckCircle, Loader2 } from 'lucide-react';
 import { usePaymentLogic } from '../hooks/usePaymentLogic';
+import { safeParseNumber } from '@/utils/money';
 import type { SaleItem, SaleSummary } from '../../../types/types';
 import './PaymentView.css';
 
@@ -8,13 +10,15 @@ interface PaymentViewProps {
   summary: SaleSummary;
   onBackToSale: () => void;
   onSaleCompleted: () => void;
+  paymentAmountRef: React.RefObject<HTMLInputElement>;
 }
 
-export const PaymentView: React.FC<PaymentViewProps> = ({ 
-  saleItems, 
-  summary, 
+export const PaymentView: React.FC<PaymentViewProps> = ({
+  saleItems,
+  summary,
   onBackToSale,
-  onSaleCompleted 
+  onSaleCompleted,
+  paymentAmountRef
 }) => {
   const {
     customers,
@@ -30,18 +34,25 @@ export const PaymentView: React.FC<PaymentViewProps> = ({
     handleConfirmPurchase
   } = usePaymentLogic({ saleItems, summary, onSaleCompleted });
 
-  const receivedAmountNum = parseFloat(receivedAmount) || 0;
+  const receivedAmountNum = safeParseNumber(receivedAmount);
+
+  // Handle Enter key to confirm purchase
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !processingPayment) {
+      e.preventDefault();
+      handleConfirmPurchase();
+    }
+  };
 
   return (
     <>
       {/* Back button */}
-      <button 
+      <button
         className="back-to-sale-button"
         onClick={onBackToSale}
+        title="Volver a la venta (Escape)"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="currentColor"/>
-        </svg>
+        <ArrowLeft size={16} />
         Volver a la Compra
       </button>
 
@@ -51,17 +62,17 @@ export const PaymentView: React.FC<PaymentViewProps> = ({
           {/* Received amount section */}
           <div className="payment-section">
             <h3>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.48 2 12 2ZM13.5 6C15.99 6 18 8.01 18 10.5S15.99 15 13.5 15H12V13H13.5C14.88 13 16 11.88 16 10.5S14.88 8 13.5 8H12V6H13.5ZM11 8H9.5C8.12 8 7 9.12 7 10.5S8.12 13 9.5 13H11V15H9.5C7.01 15 5 12.99 5 10.5S7.01 6 9.5 6H11V8Z" fill="currentColor"/>
-              </svg>
+              <DollarSign size={20} />
               Monto Recibido
             </h3>
             <div className="payment-input-container">
               <span className="currency-symbol">$</span>
               <input
+                ref={paymentAmountRef}
                 type="number"
                 value={receivedAmount}
                 onChange={(e) => setReceivedAmount(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -82,9 +93,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({
           {/* Customer section */}
           <div className="payment-section">
             <h3>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="currentColor"/>
-              </svg>
+              <User size={20} />
               Cliente
             </h3>
             <select
@@ -123,21 +132,16 @@ export const PaymentView: React.FC<PaymentViewProps> = ({
           className="confirm-purchase-button"
           onClick={handleConfirmPurchase}
           disabled={processingPayment || (!isCredit && receivedAmountNum < summary.total)}
+          title="Confirmar pago (Enter)"
         >
           {processingPayment ? (
             <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" fill="currentColor">
-                  <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
-                </path>
-              </svg>
+              <Loader2 size={20} className="animate-spin" />
               Procesando...
             </>
           ) : (
             <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="currentColor"/>
-              </svg>
+              <CheckCircle size={20} />
               Confirmar Compra
             </>
           )}

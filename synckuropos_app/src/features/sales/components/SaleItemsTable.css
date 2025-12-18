@@ -16,18 +16,28 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: #6b7280;
+  height: 250px;
+  color: #9ca3af;
   text-align: center;
+  gap: 16px;
 }
 
-.empty-sale p {
-  margin: 4px 0;
+.empty-icon {
+  color: #d1d5db;
+  opacity: 0.5;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0;
 }
 
 .empty-sale-hint {
   font-size: 14px;
-  opacity: 0.8;
+  color: #9ca3af;
+  margin: 0;
 }
 
 /* Tabla de items */

@@ -1,4 +1,5 @@
 import React from 'react';
+import { isValidPositiveNumber } from '@/utils/money';
 import './PaymentForm.css';
 
 interface PaymentFormProps {
@@ -43,7 +44,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
             type="button"
             className="customer-btn customer-btn-success"
             onClick={onRegisterPayment}
-            disabled={processingPayment || !paymentAmount || parseFloat(paymentAmount) <= 0}
+            disabled={processingPayment || !isValidPositiveNumber(paymentAmount)}
           >
             {processingPayment ? '⏳ Procesando...' : '💰 Registrar Abono'}
           </button>

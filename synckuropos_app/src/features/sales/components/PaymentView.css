@@ -24,15 +24,15 @@
   box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
 }
 
-/* Vista de Pago */
+/* Vista de Pago - Adjusted for panel context */
 .payment-view {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  animation: slideIn 0.3s ease-out;
+  gap: 16px;  /* Reduced from 20px for panel fit */
+  height: 100%;
+  overflow-y: auto;  /* Allow scrolling if content is too tall */
   flex: 1;
   min-height: 0;
-  justify-content: space-between;
 }
 
 .payment-sections {
@@ -53,10 +53,23 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 .payment-section {
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;  /* Reduced from 20px for panel context */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 

@@ -1,6 +1,12 @@
-/* SearchBar Component Styles */
+/* SearchBar Component Styles - Panel Context */
 .search-section {
   position: relative;
+  height: 100%;  /* Fill the action panel */
+  display: flex;
+  flex-direction: column-reverse;  /* Input at bottom, results grow upward */
+  z-index: 200;  /* High enough to be above other elements */
+  isolation: isolate;  /* Create new stacking context */
+  justify-content: flex-end;  /* Align input to bottom */
 }
 
 .search-input-container {
@@ -29,12 +35,23 @@
   box-shadow: 0 0 0 3px rgba(42, 66, 62, 0.1);
 }
 
+.search-icon {
+  position: absolute;
+  right: 16px;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .search-loading {
   position: absolute;
   right: 16px;
-  font-size: 18px;
-  animation: pulse 1.5s infinite;
   z-index: 2;
+}
+
+.search-icon-loading {
+  color: #2A423E;
+  animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {

@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useDatabase } from '../../../hooks/useDatabase.tsx';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRxQuery, useRxCollection } from 'rxdb-hooks';
 import { useToast } from '../../../hooks/useToast';
 import type { Product } from '../../../types/types';
 
 interface UseProductSearchProps {
   onProductSelect: (product: Product) => void;
+  searchInputRef?: React.RefObject<HTMLInputElement>;
 }
 
 interface UseProductSearchReturn {
@@ -27,31 +28,85 @@ interface UseProductSearchReturn {
   addSelectedProduct: () => void;
 }
 
-// Constants for barcode detection
 const BARCODE_KEYSTROKE_THRESHOLD = 50; // milliseconds
 const BARCODE_MIN_KEYSTROKES = 3;
 const BARCODE_BLOCK_DURATION = 500; // 500ms to block Enter after detecting barcode
 
-export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): UseProductSearchReturn => {
+export const useProductSearch = ({ onProductSelect, searchInputRef: externalRef }: UseProductSearchProps): UseProductSearchReturn => {
   // Search states
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedResultIndex, setSelectedResultIndex] = useState(0);
-  const [lastSearchTerm, setLastSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [inputHasFocus, setInputHasFocus] = useState(false);
-  
+
   // Refs for barcode detection and DOM elements
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const internalRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = externalRef || internalRef;
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const lastKeystrokeTimeRef = useRef<number>(0);
   const keystrokeTimesRef = useRef<number[]>([]);
   const isBarcodeScanning = useRef<boolean>(false);
-  
+
   // Hooks
-  const db = useDatabase();
+  const collection = useRxCollection('products');
   const toast = useToast();
+
+  // Debounce search term
+  useEffect(() => {
+    const timeoutId = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  // Reset selected index when search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== searchTerm) {
+      setSelectedResultIndex(0);
+    }
+  }, [debouncedSearchTerm, searchTerm]);
+
+  // Build reactive query - always load active products
+  const query = useMemo(() => {
+    if (!collection) return undefined;
+
+    // Always load active products, we'll filter in-memory
+    return collection.find({
+      selector: {
+        isActive: true
+      } as any,
+      limit: 100 // Get all active products to filter in-memory
+    });
+  }, [collection]);
+
+  // Reactive query
+  const { result: productsRaw, isFetching: isSearching } = useRxQuery(query);
+
+  // Convert to plain objects and filter in-memory for case-insensitive search
+  const searchResults = useMemo(() => {
+    if (!productsRaw || !debouncedSearchTerm.trim()) {
+      return [];
+    }
+    
+    const searchLower = debouncedSearchTerm.toLowerCase().trim();
+    const products = productsRaw.map(doc => doc.toJSON() as Product);
+    
+    return products
+      .filter(product => {
+        const code = product.code?.toLowerCase() || '';
+        const name = product.name.toLowerCase();
+        return code.includes(searchLower) || name.includes(searchLower);
+      })
+      .slice(0, 10); // Limit to 10 results
+  }, [productsRaw, debouncedSearchTerm]);
+
+  // Show results when we have them
+  useEffect(() => {
+    if (searchResults && searchResults.length > 0 && debouncedSearchTerm.trim()) {
+      setShowResults(true);
+    } else if (!debouncedSearchTerm.trim()) {
+      setShowResults(false);
+    }
+  }, [searchResults, debouncedSearchTerm]);
 
   // Auto-focus on the input when component loads
   useEffect(() => {
@@ -59,112 +114,67 @@ export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): Us
       searchInputRef.current.focus();
       setInputHasFocus(true);
     }
-  }, []);
+  }, [searchInputRef]);
 
   // Handle clicks outside search area
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
+
       // Check if click was outside the search input and results
       if (
-        searchInputRef.current && 
+        searchInputRef.current &&
         !searchInputRef.current.contains(target) &&
-        searchResultsRef.current && 
+        searchResultsRef.current &&
         !searchResultsRef.current.contains(target)
       ) {
-        setShowResults(false);
-        setInputHasFocus(false);
+        // Delay to allow click on results to register
+        setTimeout(() => {
+          setShowResults(false);
+          setInputHasFocus(false);
+        }, 200);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
-
-  // Product search function
-  const searchProducts = useCallback(async (term: string) => {
-    if (!term.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      setSelectedResultIndex(0);
-      setLastSearchTerm('');
-      setShowResults(false);
-      return;
-    }
-
-    // Reset index if search term changed
-    if (term !== lastSearchTerm) {
-      setSelectedResultIndex(0);
-      setLastSearchTerm(term);
-    }
-
-    setIsSearching(true);
-    try {
-      const results = await db.collections.products
-        .find({
-          selector: {
-            $and: [
-              { _deleted: false },
-              {
-                $or: [
-                  { code: { $regex: term, $options: 'i' } },
-                  { name: { $regex: term, $options: 'i' } }
-                ]
-              }
-            ]
-          },
-          limit: 10
-        })
-        .exec();
-
-      setSearchResults(results);
-      setShowResults(true);
-    } catch (error) {
-      console.error('Error searching products:', error);
-      toast.showError('Error al buscar productos');
-      setSearchResults([]);
-      setShowResults(false);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [db, toast, lastSearchTerm]);
-
-  // Debounce for search
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchProducts(searchTerm);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, searchProducts]);
+  }, [searchInputRef, searchResultsRef]);
 
   // Handle barcode scanned - search and add product directly
   const handleBarcodeScanned = async (barcode: string) => {
+    if (!collection) return;
+
     try {
-      const results = await db.collections.products
+      const results = await collection
         .find({
           selector: {
-            $and: [
-              { _deleted: false },
-              {
-                $or: [
-                  { code: { $regex: `^${barcode}$`, $options: 'i' } }, // Exact search first
-                  { code: { $regex: barcode, $options: 'i' } },
-                  { name: { $regex: barcode, $options: 'i' } }
-                ]
-              }
-            ]
-          },
-          limit: 10
+            isActive: true
+          } as any,
+          limit: 100
         })
         .exec();
 
-      if (results.length > 0) {
-        onProductSelect(results[0]);
+      // Convert to products and search in-memory
+      const products = results.map(doc => doc.toJSON() as Product);
+      const barcodeLower = barcode.toLowerCase().trim();
+      
+      // Try exact match first
+      let found = products.find(p => p.code?.toLowerCase() === barcodeLower);
+      
+      // Then try partial match
+      if (!found) {
+        found = products.find(p => {
+          const code = p.code?.toLowerCase() || '';
+          const name = p.name.toLowerCase();
+          return code.includes(barcodeLower) || name.includes(barcodeLower);
+        });
+      }
+
+      if (found) {
+        onProductSelect(found);
         clearSearch();
       } else {
         toast.showWarning('No se encontró ningún producto con ese código');
@@ -210,7 +220,7 @@ export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): Us
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, collection, toast, onProductSelect]);
 
   // Handle input focus
   const handleInputFocus = () => {
@@ -220,9 +230,15 @@ export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): Us
     }
   };
 
-  // Handle input blur
+  // Handle input blur  
   const handleInputBlur = () => {
-    // Don't change inputHasFocus here because click outside handles it
+    // Delay to allow clicks on results to register first
+    setTimeout(() => {
+      // Only blur if not clicking on results
+      if (document.activeElement !== searchInputRef.current) {
+        setInputHasFocus(false);
+      }
+    }, 150);
   };
 
   // Detect barcode entry
@@ -234,14 +250,12 @@ export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): Us
       
       // If we're in barcode scanning process, ignore Enter
       if (isBarcodeScanning.current) {
-        console.log('Enter blocked - detected barcode scanning');
         return;
       }
       
       // Additional verification: if last keystroke was very recent (possible barcode scanner)
       const timeSinceLastKeystroke = currentTime - lastKeystrokeTimeRef.current;
       if (timeSinceLastKeystroke < 100 && searchTerm.length > 3) {
-        console.log('Enter blocked - very recent keystroke, possible barcode scanner');
         // Mark as scanning temporarily
         isBarcodeScanning.current = true;
         setTimeout(() => {
@@ -284,22 +298,28 @@ export const useProductSearch = ({ onProductSelect }: UseProductSearchProps): Us
 
   // Add selected product from search results
   const addSelectedProduct = () => {
-    if (searchResults.length > 0 && selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
+    // Only add if we have search results and they are visible
+    if (!showResults || searchResults.length === 0) {
+      if (searchTerm.trim()) {
+        toast.showWarning('No se encontró ningún producto con ese código');
+      }
+      return;
+    }
+
+    if (selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
       onProductSelect(searchResults[selectedResultIndex]);
       clearSearch();
     } else if (searchResults.length > 0) {
       // Fallback: add first product if index is out of range
       onProductSelect(searchResults[0]);
       clearSearch();
-    } else if (searchTerm.trim()) {
-      toast.showWarning('No se encontró ningún producto con ese código');
     }
   };
 
   // Clear search and re-focus
   const clearSearch = () => {
     setSearchTerm('');
-    setSearchResults([]);
+    setDebouncedSearchTerm('');
     setShowResults(false);
     if (searchInputRef.current) {
       searchInputRef.current.focus();

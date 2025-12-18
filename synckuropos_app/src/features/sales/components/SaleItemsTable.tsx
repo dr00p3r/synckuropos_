@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trash2, PackageOpen } from 'lucide-react';
 import { useSaleItemsLogic } from '../hooks/useSaleItemsLogic';
 import type { SaleItem } from '../../../types/types';
 import './SaleItemsTable.css';
@@ -28,8 +29,9 @@ export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({
     return (
       <div className="sale-items-section">
         <div className="empty-sale">
-          <p>No hay productos en la venta actual</p>
-          <p className="empty-sale-hint">Busca y agrega productos usando la barra de arriba</p>
+          <PackageOpen size={64} className="empty-icon" strokeWidth={1.5} />
+          <p className="empty-title">No hay productos en la venta</p>
+          <p className="empty-sale-hint">Busca y agrega productos para comenzar</p>
         </div>
       </div>
     );
@@ -82,22 +84,9 @@ export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({
                   onClick={() => removeItem(item.productId!)}
                   className="remove-button"
                   aria-label="Eliminar producto"
+                  title="Eliminar"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>

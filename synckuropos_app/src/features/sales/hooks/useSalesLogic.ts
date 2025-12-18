@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import type { Product, SaleItem, SaleSummary } from '../../../types/types';
 
@@ -17,38 +17,44 @@ interface UseSalesLogicReturn {
   handleCompleteSale: () => void;
   handleBackToSale: () => void;
   handleSaleCompleted: () => void;
+  searchInputRef: React.RefObject<HTMLInputElement>;
+  paymentAmountRef: React.RefObject<HTMLInputElement>;
 }
 
-export const useSalesLogic = ({ 
-  saleItems, 
-  setSaleItems, 
-  onClearSale 
+export const useSalesLogic = ({
+  saleItems,
+  setSaleItems,
+  onClearSale
 }: UseSalesLogicProps): UseSalesLogicReturn => {
   // States
   const [showPaymentView, setShowPaymentView] = useState(false);
-  
+
+  // Refs for focus management
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const paymentAmountRef = useRef<HTMLInputElement>(null);
+
   // Constants
   const TAX_RATE = 0.15; // 15% IVA
-  
+
   const toast = useToast();
 
   // Add product to sale
-  const addProductToSale = (product: Product) => {
+  const addProductToSale = useCallback((product: Product) => {
     setSaleItems(prevItems => {
       const existingItemIndex = prevItems.findIndex(item => item.productId === product.productId);
-      
+
       if (existingItemIndex >= 0) {
         // Product already exists, increment quantity
         const updatedItems = [...prevItems];
         const existingItem = updatedItems[existingItemIndex];
         const newQuantity = existingItem.quantity + 1;
-        
+
         updatedItems[existingItemIndex] = {
           ...existingItem,
           quantity: newQuantity,
           totalPrice: newQuantity * existingItem.unitPrice
         };
-        
+
         return updatedItems;
       } else {
         // New product
@@ -61,13 +67,21 @@ export const useSalesLogic = ({
           totalPrice: product.basePrice,
           allowDecimalQuantity: product.allowDecimalQuantity
         };
-        
+
         return [...prevItems, newItem];
       }
     });
-    
+
     toast.showSuccess(`Producto "${product.name}" agregado a la venta`);
-  };
+
+    // Return focus to search input and select all for easy clearing
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+        searchInputRef.current.select();
+      }
+    }, 50);
+  }, [setSaleItems, toast]);
 
   // Calculate sale summary
   const calculateSummary = (): SaleSummary => {
@@ -79,25 +93,71 @@ export const useSalesLogic = ({
   };
 
   // Handle complete sale (open payment view)
-  const handleCompleteSale = () => {
+  const handleCompleteSale = useCallback(() => {
     if (saleItems.length === 0) {
       toast.showWarning('No hay productos en la venta');
       return;
     }
-    
+
     setShowPaymentView(true);
-  };
+
+    // Focus payment amount input after transition
+    setTimeout(() => {
+      if (paymentAmountRef.current) {
+        paymentAmountRef.current.focus();
+        paymentAmountRef.current.select();
+      }
+    }, 100);
+  }, [saleItems.length, toast]);
 
   // Go back to sale view
-  const handleBackToSale = () => {
+  const handleBackToSale = useCallback(() => {
     setShowPaymentView(false);
-  };
+
+    // Return focus to search
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+  }, []);
 
   // Handle sale completed
-  const handleSaleCompleted = () => {
+  const handleSaleCompleted = useCallback(() => {
     onClearSale();
     setShowPaymentView(false);
-  };
+
+    // Return to search input
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+  }, [onClearSale]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyboard = (e: KeyboardEvent) => {
+      // F9: Open checkout (if items exist and not already in payment view)
+      if (e.key === 'F9') {
+        e.preventDefault();
+        if (saleItems.length > 0 && !showPaymentView) {
+          handleCompleteSale();
+        }
+      }
+
+      // Escape: Cancel payment (if in payment view)
+      if (e.key === 'Escape') {
+        if (showPaymentView) {
+          e.preventDefault();
+          handleBackToSale();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyboard);
+    return () => document.removeEventListener('keydown', handleGlobalKeyboard);
+  }, [saleItems.length, showPaymentView, handleCompleteSale, handleBackToSale]);
 
   return {
     showPaymentView,
@@ -107,6 +167,8 @@ export const useSalesLogic = ({
     calculateSummary,
     handleCompleteSale,
     handleBackToSale,
-    handleSaleCompleted
+    handleSaleCompleted,
+    searchInputRef,
+    paymentAmountRef,
   };
 };

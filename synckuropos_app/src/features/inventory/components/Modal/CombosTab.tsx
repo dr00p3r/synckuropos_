@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CombosTabProps } from './ProductModalTypes';
+import { safeParseNumber, toDollars, multiplyMoney, formatMoney } from '@/utils/money';
 import './CombosTab.css';
 
 export const CombosTab: React.FC<CombosTabProps> = ({
@@ -16,15 +17,8 @@ export const CombosTab: React.FC<CombosTabProps> = ({
   onCancelEditCombo,
   onDeleteCombo
 }) => {
-  // Función para convertir string a número, manejando valores vacíos
-  const parseNumber = (value: string): number => {
-    if (value === '' || value === undefined || value === null) return 0;
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
-  };
-
-  const canAddCombo = parseNumber(newCombo.quantity) > 0 && parseNumber(newCombo.price) > 0;
-  const canSaveEdit = parseNumber(editComboData.quantity) > 0 && parseNumber(editComboData.price) > 0;
+  const canAddCombo = safeParseNumber(newCombo.quantity) > 0 && safeParseNumber(newCombo.price) > 0;
+  const canSaveEdit = safeParseNumber(editComboData.quantity) > 0 && safeParseNumber(editComboData.price) > 0;
 
   return (
     <div className="combos-form">
@@ -81,9 +75,9 @@ export const CombosTab: React.FC<CombosTabProps> = ({
                         `$${combo.price.toFixed(2)}`
                       )}
                     </td>
-                    <td>${(currentProduct.basePrice / 100 * combo.quantity).toFixed(2)}</td>
+                    <td>{formatMoney(multiplyMoney(currentProduct.basePrice, combo.quantity))}</td>
                     <td className="savings">
-                      ${((currentProduct.basePrice / 100 * combo.quantity) - combo.price).toFixed(2)}
+                      {formatMoney(multiplyMoney(currentProduct.basePrice, combo.quantity) - Math.round(combo.price * 100))}
                     </td>
                     <td className="combo-actions">
                       {editingCombo === combo.id ? (

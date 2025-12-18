@@ -15,7 +15,9 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ saleItems, setSaleItems, onCl
     calculateSummary,
     handleCompleteSale,
     handleBackToSale,
-    handleSaleCompleted
+    handleSaleCompleted,
+    searchInputRef,
+    paymentAmountRef,
   } = useSalesLogic({ saleItems, setSaleItems, onClearSale });
 
   const summary = calculateSummary();
@@ -27,36 +29,42 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ saleItems, setSaleItems, onCl
         <h1>Venta</h1>
       </div>
 
-      {showPaymentView ? (
-        <PaymentView
-          saleItems={saleItems}
-          summary={summary}
-          onBackToSale={handleBackToSale}
-          onSaleCompleted={handleSaleCompleted}
-        />
-      ) : (
-        <>
-          {/* Sale view */}
-          <div className="sale-view visible">
-            <SearchBar
-              onProductSelect={addProductToSale}
-              onClearSale={onClearSale}
-              hasSaleItems={saleItems.length > 0}
-            />
-
-            <SaleItemsTable
-              saleItems={saleItems}
-              setSaleItems={setSaleItems}
-            />
-          </div>
+      {/* Split View Container */}
+      <div className="split-view-container">
+        {/* LEFT PANEL: Always visible items list */}
+        <div className="items-panel">
+          <SaleItemsTable
+            saleItems={saleItems}
+            setSaleItems={setSaleItems}
+          />
 
           <SaleSummary
             saleItems={saleItems}
             taxRate={taxRate}
             onCompleteSale={handleCompleteSale}
           />
-        </>
-      )}
+        </div>
+
+        {/* RIGHT PANEL: Dynamic content (Search or Payment) */}
+        <div className="action-panel">
+          {showPaymentView ? (
+            <PaymentView
+              saleItems={saleItems}
+              summary={summary}
+              onBackToSale={handleBackToSale}
+              onSaleCompleted={handleSaleCompleted}
+              paymentAmountRef={paymentAmountRef}
+            />
+          ) : (
+            <SearchBar
+              onProductSelect={addProductToSale}
+              onClearSale={onClearSale}
+              hasSaleItems={saleItems.length > 0}
+              searchInputRef={searchInputRef}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };

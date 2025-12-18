@@ -4,6 +4,7 @@ import { useDatabase } from '../../../../hooks/useDatabase.tsx';
 import { useAuth } from '../../../../hooks/useAuth.tsx';
 import { useToast } from '../../../../hooks/useToast.tsx';
 import { v4 as uuidv4 } from 'uuid';
+import { toCents, safeParseNumber, isValidPositiveNumber } from '@/utils/money';
 import CustomerInfoTab from '../CustomerInfoTab/CustomerInfoTab.tsx';
 import DebtTab from '../DebtTab/DebtTab.tsx';
 import './CustomerModal.css';
@@ -186,8 +187,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
     }
 
     if (formData.allowCredit) {
-      const creditLimit = parseFloat(formData.creditLimit);
-      if (isNaN(creditLimit) || creditLimit < 0) {
+      const creditLimit = safeParseNumber(formData.creditLimit);
+      if (creditLimit < 0) {
         toast.showError('El límite de crédito debe ser un número válido mayor o igual a 0');
         return false;
       }
@@ -210,7 +211,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         email: formData.email.trim() || undefined,
         address: formData.address.trim() || undefined,
         allowCredit: formData.allowCredit,
-        creditLimit: formData.allowCredit ? Math.round(parseFloat(formData.creditLimit) * 100) : 0, // Convertir a centavos
+        creditLimit: formData.allowCredit ? toCents(formData.creditLimit) : 0, // Convertir a centavos
         isActive: true,
         _deleted: false,
         createdAt: customer?.createdAt || new Date().toISOString(),
@@ -260,13 +261,11 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       return;
     }
 
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
+    const amountInCents = toCents(paymentAmount);
+    if (amountInCents <= 0) {
       toast.showError('El monto debe ser un número válido mayor a 0');
       return;
     }
-
-    const amountInCents = Math.round(amount * 100); // Convertir a centavos
 
     if (amountInCents > debtSummary.totalDebt) {
       toast.showError('El monto no puede ser mayor a la deuda total');

@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useDatabase } from '@/hooks/useDatabase';
+import { useState, useCallback, useMemo } from 'react';
+import { useRxQuery, useRxCollection } from 'rxdb-hooks';
 import { useToast } from '@/hooks/useToast';
 import type { Product, SortField, SortDirection, UseInventoryDataReturn } from '../types';
 
+// Configuración de paginación
+const RESULTS_LIMIT = 100; // Límite de resultados para evitar congelar la UI
+
 export const useInventoryData = (): UseInventoryDataReturn => {
-  // Estados principales
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
@@ -16,62 +14,64 @@ export const useInventoryData = (): UseInventoryDataReturn => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Hooks
-  const db = useDatabase();
+  const collection = useRxCollection('products');
   const toast = useToast();
 
-  // Cargar productos desde la base de datos
-  const loadProducts = useCallback(async () => {
-    if (!db) return;
-    
-    try {
-      setLoading(true);
-      let query = db.products.find();
-      
-      // Aplicar ordenamiento
-      if (sortDirection === 'asc') {
-        query = query.sort(sortField);
-      } else {
-        query = query.sort(`-${sortField}`);
-      }
-      
-      const allProducts = await query.exec();
-      const productsData = allProducts.map((doc: any) => doc.toJSON());
-      setProducts(productsData);
-    } catch (error) {
-      console.error('Error cargando productos:', error);
-      toast.showError('Error al cargar los productos');
-    } finally {
-      setLoading(false);
-    }
-  }, [db, sortField, sortDirection]);
+  // Build selector reactively
+  const selector = useMemo(() => {
+    const sel: any = {};
 
-  // Cargar productos al montar el componente y cuando cambien los criterios de ordenamiento
-  useEffect(() => {
-    if (db) {
-      loadProducts();
-    }
-  }, [db, loadProducts]);
-
-  // Filtrar productos cuando cambian los criterios de búsqueda
-  useEffect(() => {
-    let filtered = products;
-
-    // Filtrar por estado activo/inactivo
+    // Filtrar por estado activo/inactivo a nivel de DB
     if (!showInactive) {
-      filtered = filtered.filter(product => product.isActive);
+      sel.isActive = true;
     }
 
-    // Filtrar por término de búsqueda
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(product => 
-        (product.code?.toLowerCase().includes(search)) ||
-        product.name.toLowerCase().includes(search)
-      );
+    // No aplicamos búsqueda aquí - se hará en memoria para case-insensitive
+
+    return sel;
+  }, [showInactive]);
+
+  // Build query reactively
+  const query = useMemo(() => {
+    if (!collection) return undefined;
+
+    let q = collection.find({
+      selector: Object.keys(selector).length > 0 ? selector : undefined
+    });
+
+    // Aplicar ordenamiento
+    if (sortDirection === 'asc') {
+      q = q.sort(sortField);
+    } else {
+      q = q.sort(`-${sortField}`);
     }
 
-    setFilteredProducts(filtered);
-  }, [products, searchTerm, showInactive]);
+    // Aplicar límite de resultados
+    q = q.limit(RESULTS_LIMIT);
+
+    return q;
+  }, [collection, selector, sortField, sortDirection]);
+
+  // Reactive query - auto-updates!
+  const { result: productsRaw, isFetching: loading } = useRxQuery(query);
+
+  // Convert RxDocuments to plain Product objects and apply search filter
+  const products = useMemo(() => {
+    if (!productsRaw) return [];
+    return productsRaw.map(doc => doc.toJSON() as Product);
+  }, [productsRaw]);
+
+  // Apply search filter in-memory for case-insensitive search
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) return products;
+    
+    const searchLower = searchTerm.toLowerCase().trim();
+    return products.filter(product => {
+      const code = product.code?.toLowerCase() || '';
+      const name = product.name.toLowerCase();
+      return code.includes(searchLower) || name.includes(searchLower);
+    });
+  }, [products, searchTerm]);
 
   // Manejar cambio de ordenamiento
   const handleSort = useCallback((field: SortField) => {
@@ -87,13 +87,13 @@ export const useInventoryData = (): UseInventoryDataReturn => {
 
   // Alternar estado activo/inactivo del producto
   const toggleProductStatus = useCallback(async (product: Product) => {
-    if (!db) return;
-    
+    if (!collection) return;
+
     try {
-      const productDoc = await db.products.findOne({
-        selector: { productId: product.productId }
+      const productDoc = await collection.findOne({
+        selector: { productId: { $eq: product.productId } } as any
       }).exec();
-      
+
       if (productDoc) {
         await productDoc.update({
           $set: {
@@ -101,43 +101,36 @@ export const useInventoryData = (): UseInventoryDataReturn => {
             updatedAt: new Date().toISOString()
           }
         });
-        
+
         toast.showSuccess(
-          `Producto ${product.isActive ? 'restaurado' : 'eliminado'} correctamente`
+          `Producto ${product.isActive ? 'eliminado' : 'restaurado'} correctamente`
         );
-        
-        // Actualizar el estado local directamente en lugar de recargar todo
-        setProducts(prevProducts => 
-          prevProducts.map(p => 
-            p.productId === product.productId 
-              ? { ...p, isActive: !p.isActive, updatedAt: new Date().toISOString() }
-              : p
-          )
-        );
+
+        // No need to manually update state - reactive query will auto-update!
       }
     } catch (error) {
       console.error('Error actualizando estado del producto:', error);
       toast.showError('Error al cambiar el estado del producto');
     }
-  }, [db]);
+  }, [collection, toast]);
 
   return {
     // Estados principales
     products,
     filteredProducts,
     loading,
-    
+
     // Estados de filtros
     searchTerm,
     showInactive,
     sortField,
     sortDirection,
-    
+
     // Acciones
     setSearchTerm,
     setShowInactive,
     handleSort,
-    loadProducts,
+    loadProducts: async () => {}, // No-op - reactive query handles this
     toggleProductStatus,
   };
 };

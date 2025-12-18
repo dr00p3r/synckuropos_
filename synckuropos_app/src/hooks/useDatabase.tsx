@@ -1,12 +1,12 @@
-import { 
-  useState, 
-  useEffect, 
-  useContext, 
+import {
+  useState,
+  useEffect,
+  useContext,
   createContext,
 } from 'react';
 
+import { Provider } from 'rxdb-hooks';
 import { getDb } from '../db';
-import { startReplications } from '../helpers/replication';
 
 import type { FC, ReactNode } from 'react';
 import type { RxDatabase, RxCollection } from 'rxdb';
@@ -59,7 +59,7 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         console.log('✅ Base de datos inicializada correctamente');
 
         // Init replications
-        await startReplications(dbInstance);
+        //await startReplications(dbInstance);
         console.log('✅ Replicaciones iniciadas correctamente');
 
       } catch (error) {
@@ -85,7 +85,13 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
     );
   }
 
-  return <DbContext.Provider value={db}>{children}</DbContext.Provider>;
+  return (
+    <DbContext.Provider value={db}>
+      <Provider db={db}>
+        {children}
+      </Provider>
+    </DbContext.Provider>
+  );
 };
 
 export const useDatabase = (): AppDatabase => {

@@ -30,23 +30,38 @@ const InventoryIcon = () => (
 // Tarjeta de Ventas
 export const SalesKPICard: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { totalSales, salesCount, averageTicket, loading, error } = useSalesKPIs();
+  const {
+    totalSales,
+    salesCount,
+    averageTicket,
+    totalSalesChange,
+    salesCountChange,
+    averageTicketChange,
+    loading,
+    error
+  } = useSalesKPIs();
 
   const data: KPIData[] = [
     {
       label: 'Total vendido',
       value: totalSales,
-      type: 'currency'
+      type: 'currency',
+      trend: totalSalesChange && totalSalesChange > 0 ? 'up' : totalSalesChange && totalSalesChange < 0 ? 'down' : 'neutral',
+      trendValue: totalSalesChange ? `${totalSalesChange > 0 ? '+' : ''}${totalSalesChange.toFixed(1)}% vs período anterior` : undefined
     },
     {
       label: 'Número de ventas',
       value: salesCount,
-      type: 'count'
+      type: 'count',
+      trend: salesCountChange && salesCountChange > 0 ? 'up' : salesCountChange && salesCountChange < 0 ? 'down' : 'neutral',
+      trendValue: salesCountChange ? `${salesCountChange > 0 ? '+' : ''}${salesCountChange.toFixed(1)}%` : undefined
     },
     {
       label: 'Ticket promedio',
       value: averageTicket,
-      type: 'currency'
+      type: 'currency',
+      trend: averageTicketChange && averageTicketChange > 0 ? 'up' : averageTicketChange && averageTicketChange < 0 ? 'down' : 'neutral',
+      trendValue: averageTicketChange ? `${averageTicketChange > 0 ? '+' : ''}${averageTicketChange.toFixed(1)}%` : undefined
     }
   ];
 
@@ -73,13 +88,25 @@ export const SalesKPICard: React.FC = () => {
 // Tarjeta de Rentabilidad
 export const ProfitabilityKPICard: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { totalRevenue, totalCost, grossProfit, profitMargin, loading, error } = useProfitabilityKPIs();
+  const {
+    totalRevenue,
+    totalCost,
+    grossProfit,
+    profitMargin,
+    revenueChange,
+    profitChange,
+    marginChange,
+    loading,
+    error
+  } = useProfitabilityKPIs();
 
   const data: KPIData[] = [
     {
       label: 'Ingresos totales',
       value: totalRevenue,
-      type: 'currency'
+      type: 'currency',
+      trend: revenueChange && revenueChange > 0 ? 'up' : revenueChange && revenueChange < 0 ? 'down' : 'neutral',
+      trendValue: revenueChange ? `${revenueChange > 0 ? '+' : ''}${revenueChange.toFixed(1)}% vs período anterior` : undefined
     },
     {
       label: 'Costos totales',
@@ -90,12 +117,15 @@ export const ProfitabilityKPICard: React.FC = () => {
       label: 'Ganancia bruta',
       value: grossProfit,
       type: 'currency',
-      trend: grossProfit > 0 ? 'up' : grossProfit < 0 ? 'down' : 'neutral'
+      trend: profitChange && profitChange > 0 ? 'up' : profitChange && profitChange < 0 ? 'down' : 'neutral',
+      trendValue: profitChange ? `${profitChange > 0 ? '+' : ''}${profitChange.toFixed(1)}%` : undefined
     },
     {
       label: 'Margen de ganancia',
       value: profitMargin,
-      type: 'percentage'
+      type: 'percentage',
+      trend: marginChange && marginChange > 0 ? 'up' : marginChange && marginChange < 0 ? 'down' : 'neutral',
+      trendValue: marginChange ? `${marginChange > 0 ? '+' : ''}${marginChange.toFixed(1)}%` : undefined
     }
   ];
 
@@ -122,7 +152,14 @@ export const ProfitabilityKPICard: React.FC = () => {
 // Tarjeta de Inventario
 export const InventoryKPICard: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { totalInflows, totalOutflows, netMovement, loading, error } = useInventoryKPIs();
+  const {
+    totalInflows,
+    totalOutflows,
+    netMovement,
+    netMovementChange,
+    loading,
+    error
+  } = useInventoryKPIs();
 
   const data: KPIData[] = [
     {
@@ -141,7 +178,8 @@ export const InventoryKPICard: React.FC = () => {
       label: 'Movimiento neto',
       value: netMovement,
       type: 'quantity',
-      trend: netMovement > 0 ? 'up' : netMovement < 0 ? 'down' : 'neutral'
+      trend: netMovementChange && netMovementChange > 0 ? 'up' : netMovementChange && netMovementChange < 0 ? 'down' : 'neutral',
+      trendValue: netMovementChange ? `${netMovementChange > 0 ? '+' : ''}${netMovementChange.toFixed(1)}% vs período anterior` : undefined
     }
   ];
 

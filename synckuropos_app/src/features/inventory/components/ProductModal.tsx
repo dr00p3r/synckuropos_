@@ -4,6 +4,7 @@ import { useDatabase } from '@/hooks/useDatabase';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
+import { toCents, toDollars, safeParseNumber } from '@/utils/money';
 import './ProductModal.css';
 
 // Componentes refactorizados
@@ -116,7 +117,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       const combosFormatted = comboData.map((doc: any) => ({
         id: doc.comboProductId,
         quantity: doc.comboQuantity,
-        price: doc.comboPrice / 100
+        price: toDollars(doc.comboPrice) // Convertir de centavos a dólares
       }));
       
       setCombos(combosFormatted);
@@ -156,12 +157,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
-  // Función para convertir string a número, manejando valores vacíos
-  const parseNumber = (value: string): number => {
-    if (value === '' || value === undefined || value === null) return 0;
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
-  };
+  // NOTA: La función parseNumber ha sido reemplazada por safeParseNumber del módulo money
+  // Para cantidades monetarias, usar toCents() para convertir a centavos
 
   // Verificar si el código ya existe
   const checkExistingCode = async (code: string) => {
@@ -181,20 +178,35 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleCodeChange = async (newCode: string) => {
     handleInputChange('code', newCode);
-    
+
     if (mode === 'create' && newCode.trim()) {
       const existingProduct = await checkExistingCode(newCode);
       if (existingProduct) {
-        setCurrentProduct(existingProduct);
-        setFormData({
-          code: existingProduct.code || '',
-          name: existingProduct.name,
-          allowDecimalQuantity: existingProduct.allowDecimalQuantity,
-          isTaxable: existingProduct.isTaxable,
-        });
-        setActiveTab('stock');
-        await loadCombos(existingProduct.productId);
-        toast.showInfo('Producto existente encontrado. Cambiando a modo edición.');
+        // SEGURIDAD: Preguntar al usuario antes de cambiar a modo edición
+        const confirmEdit = window.confirm(
+          `⚠️ ATENCIÓN: El código "${newCode}" ya existe para el producto "${existingProduct.name}".\n\n` +
+          `¿Deseas editar este producto existente?\n\n` +
+          `• Presiona "Aceptar" para editar el producto "${existingProduct.name}"\n` +
+          `• Presiona "Cancelar" para ingresar un código diferente`
+        );
+
+        if (confirmEdit) {
+          // Usuario confirmó: cambiar a modo edición
+          setCurrentProduct(existingProduct);
+          setFormData({
+            code: existingProduct.code || '',
+            name: existingProduct.name,
+            allowDecimalQuantity: existingProduct.allowDecimalQuantity,
+            isTaxable: existingProduct.isTaxable,
+          });
+          setActiveTab('stock');
+          await loadCombos(existingProduct.productId);
+          toast.showInfo(`Editando producto existente: ${existingProduct.name}`);
+        } else {
+          // Usuario canceló: limpiar el código
+          handleInputChange('code', '');
+          toast.showWarning('Ingresa un código diferente para crear un nuevo producto');
+        }
       }
     }
   };
@@ -240,18 +252,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleStockMovement = async () => {
     if (!currentProduct || !db) return;
-    
-    const quantityToMove = parseNumber(stockData.quantityToMove);
-    const costPerUnit = parseNumber(stockData.costPerUnit);
-    const newSalePrice = parseNumber(stockData.newSalePrice);
-    
+
+    // Usar safeParseNumber para cantidades y toCents para valores monetarios
+    const quantityToMove = safeParseNumber(stockData.quantityToMove);
+    const costPerUnitCents = toCents(stockData.costPerUnit);
+    const newSalePriceCents = toCents(stockData.newSalePrice);
+
     if (quantityToMove === 0) {
       toast.showError('La cantidad a mover debe ser diferente de 0');
       return;
     }
 
     setLoading(true);
-    
+
     try {
       // 1. Crear registro en supplying
       const supplyingRecord = {
@@ -260,7 +273,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         userId: currentUser?.userId || 'unknown',
         productId: currentProduct.productId,
         quantity: quantityToMove,
-        unitCost: Math.round(costPerUnit * 100), // Convertir a centavos
+        unitCost: costPerUnitCents, // Ya está en centavos
         reason: stockData.reason,
         supplyDate: new Date().toISOString(),
         isActive: true,
@@ -284,8 +297,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         };
 
         // 3. Actualizar precio si se especificó uno nuevo
-        if (newSalePrice > 0) {
-          updateData.basePrice = Math.round(newSalePrice * 100);
+        if (newSalePriceCents > 0) {
+          updateData.basePrice = newSalePriceCents; // Ya está en centavos
         }
 
         await productDoc.update({ $set: updateData });
@@ -310,11 +323,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleAddCombo = async () => {
     if (!currentProduct || !db) return;
-    
-    const quantity = parseNumber(newCombo.quantity);
-    const price = parseNumber(newCombo.price);
-    
-    if (quantity <= 0 || price <= 0) {
+
+    const quantity = safeParseNumber(newCombo.quantity);
+    const priceCents = toCents(newCombo.price);
+
+    if (quantity <= 0 || priceCents <= 0) {
       toast.showError('La cantidad y el precio deben ser mayores a 0');
       return;
     }
@@ -324,7 +337,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         comboProductId: uuidv4(),
         productId: currentProduct.productId,
         comboQuantity: quantity,
-        comboPrice: Math.round(price * 100), // Convertir a centavos
+        comboPrice: priceCents, // Ya está en centavos
         isActive: true,
         _deleted: false,
         createdAt: new Date().toISOString(),
@@ -332,11 +345,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       };
 
       await db.comboProducts.insert(comboRecord);
-      
+
       setCombos(prev => [...prev, {
         id: comboRecord.comboProductId,
         quantity: comboRecord.comboQuantity,
-        price: comboRecord.comboPrice / 100 // Convertir de vuelta a dólares para mostrar
+        price: toDollars(comboRecord.comboPrice) // Convertir de centavos a dólares para mostrar
       }]);
       
       setNewCombo({ quantity: '', price: '' });
@@ -376,11 +389,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleSaveEditCombo = async () => {
     if (!db || !editingCombo) return;
-    
-    const quantity = parseNumber(editComboData.quantity);
-    const price = parseNumber(editComboData.price);
-    
-    if (quantity <= 0 || price <= 0) {
+
+    const quantity = safeParseNumber(editComboData.quantity);
+    const priceCents = toCents(editComboData.price);
+
+    if (quantity <= 0 || priceCents <= 0) {
       toast.showError('La cantidad y el precio deben ser mayores a 0');
       return;
     }
@@ -389,19 +402,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       const comboDoc = await db.comboProducts.findOne({
         selector: { comboProductId: editingCombo }
       }).exec();
-      
+
       if (comboDoc) {
         await comboDoc.update({
           $set: {
             comboQuantity: quantity,
-            comboPrice: Math.round(price * 100),
+            comboPrice: priceCents, // Ya está en centavos
             updatedAt: new Date().toISOString()
           }
         });
-        
-        setCombos(prev => prev.map(combo => 
-          combo.id === editingCombo 
-            ? { ...combo, quantity: quantity, price: price }
+
+        setCombos(prev => prev.map(combo =>
+          combo.id === editingCombo
+            ? { ...combo, quantity: quantity, price: toDollars(priceCents) }
             : combo
         ));
         

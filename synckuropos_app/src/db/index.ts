@@ -20,7 +20,6 @@ import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 
 import type { AppDatabase } from '../hooks/useDatabase.tsx';
 
-// Registrar el plugin de Query Builder
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBUpdatePlugin);
 addRxPlugin(RxDBDevModePlugin);
@@ -30,7 +29,7 @@ let dbPromise: Promise<AppDatabase> | null = null;
 const createDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
         name: 'synckuroposdb-22',
-        storage: wrappedValidateAjvStorage({ // <-- Envolvemos aquí
+        storage: wrappedValidateAjvStorage({
             storage: wrappedKeyCompressionStorage({
                 storage: getRxStorageDexie(),
             }),
