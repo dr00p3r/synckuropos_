@@ -6,7 +6,7 @@ import {
 } from 'react';
 
 import { getDb } from '../db';
-import { startReplications } from '../helpers/replication';
+import { startReplications } from '../db/replication';
 
 import type { FC, ReactNode } from 'react';
 import type { RxDatabase, RxCollection } from 'rxdb';
@@ -37,7 +37,6 @@ export type AppDatabaseCollections = {
 
 export type AppDatabase = RxDatabase<AppDatabaseCollections>;
 
-// Contexto con el tipo de la base de datos
 const DbContext = createContext<AppDatabase | null>(null);
 
 interface DatabaseProviderProps {
@@ -59,8 +58,8 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         console.log('✅ Base de datos inicializada correctamente');
 
         // Init replications
-        await startReplications(dbInstance);
-        console.log('✅ Replicaciones iniciadas correctamente');
+        //await startReplications(dbInstance);
+        //console.log('✅ Replicaciones iniciadas correctamente');
 
       } catch (error) {
         console.error('❌ Error inicializando la base de datos:', error);
