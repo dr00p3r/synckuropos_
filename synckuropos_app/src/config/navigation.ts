@@ -1,7 +1,7 @@
 export type MenuItem = {
     id: string;
     label: string;
-    icon: string;
+    icon: string; // Clase de PrimeIcons (ej: 'pi pi-home')
     roles: string[];
 };
 
