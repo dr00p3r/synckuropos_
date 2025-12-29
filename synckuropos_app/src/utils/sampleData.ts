@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import type { AppDatabase } from '../hooks/useDatabase.tsx';
-import type { Product, User } from '../types/types';
+import type { AppDatabase } from '@/hooks';
+import type { Product, User, Customer } from '../types/types';
 
 // Datos de productos de ejemplo para pruebas
 const sampleProducts: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
@@ -134,13 +134,39 @@ const sampleUsers: Omit<User, 'createdAt' | 'updatedAt' | 'passwordHash'>[] = [
   }
 ];
 
+const FinalConsumerClient: Customer = {
+  customerId: '9999999999',
+  fullname: 'Consumidor Final',
+  phone: undefined,
+  email: undefined,
+  address: undefined,
+  allowCredit: false,
+  creditLimit: 0,
+  isActive: true,
+  _deleted: false,
+  createdAt: '',
+  updatedAt: ''
+}
+
 export const initializeSampleData = async (db: AppDatabase) => {
   try {
     const currentTime = new Date().toISOString();
-
+    
+    // Verificar si el cliente "Consumidor Final" ya existe
+    const existingClient = await db.collections.customers
+      .findOne({ selector: { customerId: FinalConsumerClient.customerId } })
+      .exec();
+    if (!existingClient){
+      await db.collections.customers.insert({
+        ...FinalConsumerClient,
+        createdAt: currentTime,
+        updatedAt: currentTime
+      });
+    }
+    
     // Verificar si ya existen productos
     const existingProducts = await db.collections.products.find().limit(1).exec();
-    
+
     if (existingProducts.length === 0) {
       // Insertar productos de ejemplo
       const productsToInsert = sampleProducts.map(product => ({
