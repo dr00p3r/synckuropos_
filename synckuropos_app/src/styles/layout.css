@@ -1,0 +1,43 @@
+:root {
+    --sidebar-width: 18rem;
+    --sidebar-bg: #2A423E;
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-active: rgba(84, 119, 113, 0.5);
+    --text-color-sidebar: #F0EFE7;
+}
+
+.custom-sidebar {
+    background-color: var(--sidebar-bg) !important;
+    color: var(--text-color-sidebar) !important;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: var(--text-color-sidebar);
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item:hover {
+    background-color: var(--sidebar-hover);
+}
+
+.nav-item.active {
+    background-color: var(--sidebar-active);
+    font-weight: 600;
+}
+
+@media screen and (min-width: 768px) {
+    .md\:ml-8 {
+        margin-left: 0 !important;
+    }
+    .md\:mr-8 {
+        margin-right: var(--sidebar-width) !important;
+    }
+}
