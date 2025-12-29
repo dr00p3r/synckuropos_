@@ -18,7 +18,7 @@ import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
 
-import type { AppDatabase } from '../hooks/useDatabase.tsx';
+import type { AppDatabase } from '../shared/hooks/useDatabase.tsx';
 
 // Registrar el plugin de Query Builder
 addRxPlugin(RxDBQueryBuilderPlugin);
