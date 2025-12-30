@@ -1,5 +1,6 @@
+// useSalesLogic.ts
 import { useState } from 'react';
-import { useToast } from '../../../hooks/useToast';
+import { useToast } from '@/hooks';
 import type { Product, SaleItem, SaleSummary } from '../../../types/types';
 
 interface UseSalesLogicProps {
@@ -81,7 +82,7 @@ export const useSalesLogic = ({
   // Handle complete sale (open payment view)
   const handleCompleteSale = () => {
     if (saleItems.length === 0) {
-      toast.showWarning('No hay productos en la venta');
+      toast.showWarn('No hay productos en la venta');
       return;
     }
     

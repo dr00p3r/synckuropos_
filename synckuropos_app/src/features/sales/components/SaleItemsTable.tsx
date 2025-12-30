@@ -1,109 +1,78 @@
 import React from 'react';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Button } from 'primereact/button';
+import { InputNumber, type InputNumberValueChangeEvent } from 'primereact/inputnumber';
 import { useSaleItemsLogic } from '../hooks/useSaleItemsLogic';
 import type { SaleItem } from '../../../types/types';
-import './SaleItemsTable.css';
+import { formatCurrency } from '../../../utils/formatters';
 
 interface SaleItemsTableProps {
-  saleItems: SaleItem[];
-  setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
+    items: SaleItem[];
+    setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
 }
 
-export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ 
-  saleItems, 
-  setSaleItems 
-}) => {
-  const {
-    editingQuantity,
-    editingTotalPrice,
-    removeItem,
-    handleQuantityChange,
-    handleQuantityBlur,
-    handleQuantityFocus,
-    handleTotalPriceChange,
-    handleTotalPriceBlur,
-    handleTotalPriceFocus
-  } = useSaleItemsLogic({ saleItems, setSaleItems });
+export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items, setSaleItems }) => {
+    const { updateItemQuantity, removeItem } = useSaleItemsLogic({ saleItems: items, setSaleItems });
+    const priceBodyTemplate = (item: SaleItem) => {
+        return formatCurrency(item.unitPrice);
+    };
 
-  if (saleItems.length === 0) {
+    const totalBodyTemplate = (item: SaleItem) => {
+        return formatCurrency(item.totalPrice);
+    };
+
+    // Template para editar cantidad (InputNumber directo en la celda)
+    const quantityBodyTemplate = (item: SaleItem) => {
+        return (
+            <InputNumber 
+                value={item.quantity} 
+                onValueChange={(e: InputNumberValueChangeEvent) => {
+                    if (e.value && e.value > 0) {
+                        updateItemQuantity(item.productId!, parseFloat(e.value.toString()));
+                    }
+                }}
+                showButtons 
+                buttonLayout="horizontal" 
+                step={1}
+                min={0.01} // Si permites decimales
+                inputClassName="w-4rem text-center" 
+                decrementButtonClassName="p-button-secondary p-button-text" 
+                incrementButtonClassName="p-button-secondary p-button-text"
+            />
+        );
+    };
+
+    // Botón de eliminar
+    const actionBodyTemplate = (item: SaleItem) => {
+        return (
+            <Button 
+                icon="pi pi-trash" 
+                rounded 
+                text 
+                severity="danger" 
+                aria-label="Eliminar" 
+                onClick={() => removeItem(item.productId!)} 
+            />
+        );
+    };
+
     return (
-      <div className="sale-items-section">
-        <div className="empty-sale">
-          <p>No hay productos en la venta actual</p>
-          <p className="empty-sale-hint">Busca y agrega productos usando la barra de arriba</p>
+        <div className="card shadow-1 border-round-xl overflow-hidden h-full bg-white">
+            <DataTable 
+                value={items} 
+                scrollable 
+                scrollHeight="flex" 
+                emptyMessage="Escanea un producto para comenzar..."
+                className="p-datatable-sm"
+                stripedRows
+            >
+                <Column field="name" header="Producto" style={{ minWidth: '200px' }}></Column>
+                <Column field="unitPrice" header="Precio" body={priceBodyTemplate} style={{ width: '100px' }}></Column>
+                <Column field="quantity" header="Cant." body={quantityBodyTemplate} style={{ width: '160px' }}></Column>
+                <Column field="totalPrice" header="Total" body={totalBodyTemplate} style={{ width: '100px', fontWeight: 'bold' }}></Column>
+                <Column body={actionBodyTemplate} style={{ width: '50px' }}></Column>
+            </DataTable>
         </div>
-      </div>
     );
-  }
-
-  return (
-    <div className="sale-items-section">
-      <div className="sale-items-table">
-        <div className="table-header">
-          <div>Código</div>
-          <div>Nombre</div>
-          <div>P. Unitario</div>
-          <div>Cantidad</div>
-          <div>P. Total</div>
-          <div>Acción</div>
-        </div>
-        
-        <div className="table-body">
-          {saleItems.map((item) => (
-            <div key={item.productId} className="table-row">
-              <div className="item-code">{item.code}</div>
-              <div className="item-name">{item.name}</div>
-              <div className="item-unit-price">${(item.unitPrice / 100).toFixed(2)}</div>
-              <div className="item-quantity">
-                <input
-                  type="number"
-                  value={editingQuantity[item.productId!] ?? item.quantity}
-                  onChange={(e) => handleQuantityChange(item.productId!, e.target.value)}
-                  onFocus={() => handleQuantityFocus(item.productId!, item.quantity)}
-                  onBlur={(e) => handleQuantityBlur(item.productId!, e.target.value)}
-                  min="0.01"
-                  step={item.allowDecimalQuantity ? "0.01" : "1"}
-                  className="quantity-input"
-                />
-              </div>
-              <div className="item-total-price">
-                <input
-                  type="number"
-                  value={editingTotalPrice[item.productId!] ?? (item.totalPrice / 100).toFixed(2)}
-                  onChange={(e) => handleTotalPriceChange(item.productId!, e.target.value)}
-                  onFocus={() => handleTotalPriceFocus(item.productId!, item.totalPrice)}
-                  onBlur={(e) => handleTotalPriceBlur(item.productId!, e.target.value)}
-                  min="0.01"
-                  step="0.01"
-                  className="total-price-input"
-                />
-              </div>
-              <div className="item-actions">
-                <button
-                  onClick={() => removeItem(item.productId!)}
-                  className="remove-button"
-                  aria-label="Eliminar producto"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 };

@@ -1,57 +1,52 @@
 import React from 'react';
-import type { SaleItem, SaleSummary as SaleSummaryType } from '../../../types/types';
-import './SaleSummary.css';
+import { Button } from 'primereact/button';
+import { Divider } from 'primereact/divider';
+import type { SaleSummary } from '../../../types/types';
+import { formatCurrency } from '../../../utils/formatters';
 
-interface SaleSummaryProps {
-  saleItems: SaleItem[];
-  taxRate: number;
-  onCompleteSale: () => void;
+interface SalesSummaryProps {
+    summary: SaleSummary;
+    onPaymentClick: () => void;
+    itemCount: number;
 }
 
-export const SaleSummary: React.FC<SaleSummaryProps> = ({ 
-  saleItems, 
-  taxRate, 
-  onCompleteSale 
-}) => {
-  // Calculate sale summary
-  const calculateSummary = (): SaleSummaryType => {
-    const subtotal = saleItems.reduce((sum, item) => sum + (item.totalPrice / 100), 0);
-    const tax = subtotal * taxRate;
-    const total = subtotal + tax;
-    
-    return { subtotal, tax, total };
-  };
+export const SalesSummary: React.FC<SalesSummaryProps> = ({ summary, onPaymentClick, itemCount }) => {
 
-  const summary = calculateSummary();
+    return (
+        <div className="card bg-white shadow-2 border-round-xl p-4 h-full flex flex-column justify-content-between">
+            <div>
+                <h2 className="text-xl font-bold m-0 mb-3 text-900">Resumen</h2>
+                
+                <div className="flex justify-content-between mb-2">
+                    <span className="text-600">Items</span>
+                    <span className="font-medium text-900">{itemCount}</span>
+                </div>
+                
+                <div className="flex justify-content-between mb-2">
+                    <span className="text-600">Subtotal</span>
+                    <span className="font-medium text-900">{formatCurrency(summary.subtotal)}</span>
+                </div>
+                
+                <div className="flex justify-content-between mb-2">
+                    <span className="text-600">IVA (15%)</span>
+                    <span className="font-medium text-900">{formatCurrency(summary.tax)}</span>
+                </div>
 
-  if (saleItems.length === 0) {
-    return null;
-  }
+                <Divider />
 
-  return (
-    <>
-      <div className="sale-summary">
-        <div className="summary-row">
-          <span>Subtotal:</span>
-          <span>${summary.subtotal.toFixed(2)}</span>
+                <div className="flex justify-content-between align-items-center">
+                    <span className="text-xl font-bold text-900">TOTAL</span>
+                    <span className="text-3xl font-bold text-primary">{formatCurrency(summary.total)}</span>
+                </div>
+            </div>
+
+            <Button 
+                label="COBRAR (F9)" 
+                icon="pi pi-wallet" 
+                className="w-full mt-4 p-button-lg py-3 font-bold text-xl" 
+                onClick={onPaymentClick}
+                disabled={itemCount === 0}
+            />
         </div>
-        <div className="summary-row">
-          <span>IVA ({(taxRate * 100).toFixed(0)}%):</span>
-          <span>${summary.tax.toFixed(2)}</span>
-        </div>
-        <div className="summary-row total-row">
-          <span>TOTAL:</span>
-          <span>${summary.total.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <button 
-        className="complete-sale-button"
-        onClick={onCompleteSale}
-      >
-        <div className="button-top">Completar Pago</div>
-        <div className="button-bottom">${summary.total.toFixed(2)}</div>
-      </button>
-    </>
-  );
+    );
 };
