@@ -1,6 +1,5 @@
 import type { Product, Customer, SaleItem } from '@/types/types';
 
-// Sales-specific types
 export interface SalesScreenProps {
   saleItems: SaleItem[];
   setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
@@ -35,7 +34,6 @@ export interface SearchResultsProps {
   onAddProduct: (product: Product) => void;
 }
 
-// Payment logic types
 export interface PaymentSummary {
   subtotal: number;
   tax: number;
@@ -52,7 +50,6 @@ export interface UsePaymentLogicReturn {
   handleConfirmPurchase: () => Promise<void>;
 }
 
-// Product search types
 export interface UseProductSearchReturn {
   products: Product[];
   filteredProducts: Product[];
@@ -61,7 +58,6 @@ export interface UseProductSearchReturn {
   setSearchTerm: (term: string) => void;
 }
 
-// Sale items logic types
 export interface UseSaleItemsLogicReturn {
   addProduct: (product: Product) => void;
   updateQuantity: (productId: string, newQuantity: number) => void;
@@ -69,12 +65,10 @@ export interface UseSaleItemsLogicReturn {
   clearSale: () => void;
 }
 
-// Sales logic types
 export interface UseSalesLogicReturn {
   showPaymentView: boolean;
   setShowPaymentView: (show: boolean) => void;
   handleSaleComplete: () => void;
 }
 
-// Re-export for convenience
 export type { Product, Customer, SaleItem };
