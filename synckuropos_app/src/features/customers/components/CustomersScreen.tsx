@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { CustomerModal } from './CustomerModal/CustomerModal';
-import SearchControls from './SearchControls/SearchControls';
+import SearchControls from './SearchControls';
 import CustomersTable from './CustomersTable/CustomersTable';
-import EmptyState from './EmptyState/EmptyState';
-import LoadingState from './LoadingState/LoadingState';
+import EmptyState from './EmptyState';
+import LoadingState from './LoadingState';
 import { useCustomersData } from '../hooks/useCustomersData';
 import type { Customer, CustomerWithDebt } from '../types';
 import './CustomersScreen.css';

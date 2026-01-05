@@ -1,5 +1,5 @@
 import React from 'react';
-import type { SearchControlsProps } from '../../types';
+import type { SearchControlsProps } from '../types';
 import './SearchControls.css';
 
 const SearchControls: React.FC<SearchControlsProps> = ({

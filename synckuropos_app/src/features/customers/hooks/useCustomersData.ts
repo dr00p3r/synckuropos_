@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useDatabase } from '@/hooks/useDatabase';
-import { useToast } from '@/hooks/useToast';
+import { useDatabase } from '@/shared/hooks/useDatabase';
+import { useToast } from '@/shared/hooks/useToast';
 import type { CustomerWithDebt, SortField, SortDirection, UseCustomersDataReturn } from '../types';
 
 export const useCustomersData = (): UseCustomersDataReturn => {

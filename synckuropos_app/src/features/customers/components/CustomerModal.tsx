@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import type { Customer, Debt, DebtPayment } from '../../../../types/types.ts';
-import { useDatabase } from '../../../../hooks/useDatabase.tsx';
-import { useAuth } from '../../../../hooks/useAuth.tsx';
-import { useToast } from '../../../../hooks/useToast.tsx';
+import { useDatabase } from '../../../../shared/hooks/useDatabase.tsx';
+import { useAuth } from '../../../../shared/hooks/useAuth.tsx';
+import { useToast } from '../../../../shared/hooks/useToast.tsx';
 import { v4 as uuidv4 } from 'uuid';
-import CustomerInfoTab from '../CustomerInfoTab/CustomerInfoTab.tsx';
+import CustomerInfoTab from '../CustomerInfoTab.tsx';
 import DebtTab from '../DebtTab/DebtTab.tsx';
 import './CustomerModal.css';
 
