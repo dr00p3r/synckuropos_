@@ -4,7 +4,7 @@
 :root {
     font-family: 'Inter', var(--font-family);
     font-size: 14px; 
-    --surface-ground: #f8f9fa; 
+    --surface-ground: #f8f9fa;
 }
 
 body {
@@ -28,4 +28,9 @@ body {
 /* Utilidad para quitar el borde focus azul por defecto y usar el del tema */
 :focus-visible {
     outline: none;
+}
+
+.p-highlight {
+    color: #ffffff !important;
+    background-color: var(--primary-color) !important;
 }
