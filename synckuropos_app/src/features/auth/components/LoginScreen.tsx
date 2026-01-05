@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/hooks';
+import { useToast } from '@/hooks';
 import type { LoginCredentials } from '../types';
 import './LoginScreen.css';
 
 export const LoginScreen: React.FC = () => {
   const { login, isLoading } = useAuth();
-  const { showError, showWarning } = useToast();
+  const { showError, showWarn } = useToast();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',
     password: ''
@@ -25,12 +25,12 @@ export const LoginScreen: React.FC = () => {
     
     // Validaciones básicas
     if (!credentials.username.trim()) {
-      showWarning('Por favor ingresa tu nombre de usuario');
+      showWarn('Por favor ingresa tu nombre de usuario');
       return;
     }
 
     if (!credentials.password) {
-      showWarning('Por favor ingresa tu contraseña');
+      showWarn('Por favor ingresa tu contraseña');
       return;
     }
 
