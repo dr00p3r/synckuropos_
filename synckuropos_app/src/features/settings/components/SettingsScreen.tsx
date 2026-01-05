@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks';
 import { CreateUserModal } from './CreateUserModal';
 import type { User } from '../types';
 import './SettingsScreen.css';
