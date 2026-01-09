@@ -71,7 +71,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         value={selectedCustomerId} 
                         options={customers} 
                         onChange={(e) => setSelectedCustomerId(e.value)} 
-                        optionLabel="name" 
+                        optionLabel="fullname" 
                         optionValue="customerId"
                         placeholder="Consumidor Final" 
                         filter 
