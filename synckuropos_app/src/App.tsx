@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LoginScreen } from '@/features/auth';
 import { SalesScreen } from '@/features/sales';
 import { InventoryScreen } from '@/features/inventory';
+import { CustomersScreen } from '@/features/customers';
 import { ReportsScreen } from '@/features/reports';
 
 import { useAuth } from './hooks/useAuth';
@@ -46,12 +47,7 @@ function App() {
       case 'inventario':
         return <InventoryScreen />;
       case 'clientes':
-        //return <CustomersScreen />;
-        return (
-            <div className="p-5 text-center">
-                <h2>Página no encontrada</h2>
-            </div>
-        );
+        return <CustomersScreen />;
       case 'reportes':
         return <ReportsScreen />
       case 'ajustes':
