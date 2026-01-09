@@ -101,5 +101,67 @@ export const productRepository = {
                 $set: { isActive: !product.isActive, updatedAt: new Date().toISOString() }
             });
         }
+    },
+
+    getCombosByProduct(db: any, productId: string) {
+        return db.comboProducts.find({
+            selector: { 
+                productId: productId,
+                isActive: true 
+            }
+        }).sort({ comboQuantity: 'asc' }); // Ordenar por cantidad
+    },
+
+    // Agregar un combo
+    async addCombo(db: any, productId: string, quantity: number, price: number) {
+        return db.comboProducts.insert({
+            comboProductId: uuidv4(),
+            productId,
+            comboQuantity: quantity,
+            comboPrice: Math.round(price * 100), // Guardar en centavos
+            isActive: true,
+            _deleted: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
+    },
+
+    // Eliminar un combo (Soft delete)
+    async deleteCombo(db: any, comboProductId: string) {
+        const doc = await db.comboProducts.findOne(comboProductId).exec();
+        if (doc) {
+            return doc.update({
+                $set: { 
+                    _deleted: true, 
+                    isActive: false, // Importante marcarlo inactivo
+                    updatedAt: new Date().toISOString() 
+                }
+            });
+        }
+    },
+
+    /**
+     * Obtiene el costo unitario del último abastecimiento registrado para un producto.
+     */
+    async getLastSupplyCost(db: any, productId: string): Promise<number | null> {
+        try {
+            const lastSupply = await db.supplyings.findOne({
+                selector: { 
+                    productId: productId,
+                    supplyDate: { $gt: '' } 
+                },
+                sort: [
+                    { supplyDate: 'desc' }
+                ]
+            }).exec();
+
+            if (lastSupply) {
+                return lastSupply.unitCost / 100;
+            }
+            return null;
+        } catch (error) {
+            console.error("Error fetching last supply cost:", error);
+            return null;
+        }
     }
 };
