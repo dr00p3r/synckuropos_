@@ -41,12 +41,16 @@ export const customerRepository = {
 
     /**
      * Obtiene todos los clientes con su deuda calculada
+     * @param onlyActive - Si true, solo devuelve clientes activos (default: false)
      */
-    async getCustomersWithDebt(db: any): Promise<CustomerWithDebt[]> {
-        const customers = await db.customers.find({
-            selector: { isActive: true }
-        }).exec();
+    async getCustomersWithDebt(db: any, onlyActive: boolean = false): Promise<CustomerWithDebt[]> {
+        const selector: any = { _deleted: false };
+        
+        if (onlyActive) {
+            selector.isActive = true;
+        }
 
+        const customers = await db.customers.find({ selector }).exec();
         const customersData = customers.map((doc: any) => doc.toJSON());
 
         // Calcular deuda de cada cliente en paralelo
