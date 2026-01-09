@@ -69,35 +69,38 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     );
 
     return (
-    <div className="flex min-h-screen surface-ground">
-        {/* 1. CONTENIDO PRINCIPAL */}
-        <div className="flex-1 flex flex-column md:mr-8" style={{ marginRight: 'var(--sidebar-width)' }}>
-            
-            {/* Topbar Móvil */}
-            <div className="md:hidden flex align-items-center justify-content-between p-3 bg-white shadow-1 mb-2">
-                 <span className="font-bold text-xl text-900">SyncKuro</span>
-                 <Button icon="pi pi-bars" text rounded onClick={() => setVisibleMobile(true)} />
+        <div className="flex h-screen surface-ground overflow-hidden">
+            {/* 1. CONTENIDO PRINCIPAL */}
+            <div 
+                className="flex-1 flex flex-column min-h-0" 
+                style={{ marginRight: 'var(--sidebar-width)' }}
+            >
+                {/* Topbar Móvil */}
+                <div className="md:hidden flex align-items-center justify-content-between p-3 bg-white shadow-1 flex-shrink-0">
+                     <span className="font-bold text-xl text-900">SyncKuro</span>
+                     <Button icon="pi pi-bars" text rounded onClick={() => setVisibleMobile(true)} />
+                </div>
+
+                {/* Main: flex-1 + min-h-0 + overflow-hidden para que hijos controlen scroll */}
+                <main className="flex-1 min-h-0 p-3 md:p-4 flex flex-column overflow-hidden">
+                    {children}
+                </main>
             </div>
 
-            <main className="flex-1 p-3 md:p-4 overflow-y-auto">
-                {children}
-            </main>
-        </div>
+            {/* 2. SIDEBAR DESKTOP */}
+            <div className="hidden md:flex flex-column fixed right-0 top-0 h-full shadow-2 custom-sidebar w-18rem">
+                <SidebarContent />
+            </div>
 
-        {/* 2. SIDEBAR DESKTOP */}
-        <div className="hidden md:flex flex-column fixed right-0 top-0 h-full shadow-2 custom-sidebar w-18rem">
-            <SidebarContent />
+            {/* Sidebar Móvil */}
+            <Sidebar 
+                visible={visibleMobile} 
+                position="right"
+                onHide={() => setVisibleMobile(false)}
+                className="custom-sidebar w-18rem border-none"
+            >
+                <SidebarContent />
+            </Sidebar>
         </div>
-
-        {/* Sidebar Móvil */}
-        <Sidebar 
-            visible={visibleMobile} 
-            position="right"
-            onHide={() => setVisibleMobile(false)}
-            className="custom-sidebar w-18rem border-none"
-        >
-            <SidebarContent />
-        </Sidebar>
-    </div>
-);
+    );
 };
