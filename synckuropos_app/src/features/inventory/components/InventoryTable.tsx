@@ -114,7 +114,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
     );
 
     return (
-        <div className="card shadow-1 p-3 bg-white border-round-xl">
+        <div className="card shadow-1 p-3 bg-white border-round-xl h-full flex flex-column">
             <DataTable 
                 value={visibleProducts} 
                 paginator 
@@ -126,9 +126,11 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                 header={header}
                 loading={loading}
                 emptyMessage="No se encontraron productos."
-                className="p-datatable-sm"
+                className="p-datatable-sm flex-grow-1"
                 stripedRows
                 rowClassName={rowClassName}
+                scrollable
+                scrollHeight="flex"
             >
                 <Column field="code" header="Código" sortable style={{ minWidth: '100px' }} />
                 <Column field="name" header="Nombre" body={nameTemplate} sortable style={{ minWidth: '250px' }} />

@@ -21,7 +21,8 @@ export const InventoryScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-column gap-3">
+        // h-full + min-h-0 es clave para que flex-grow funcione con scroll interno
+        <div className="h-full min-h-0 flex flex-column">
             <InventoryTable 
                 products={products}
                 loading={loading}
