@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
@@ -9,6 +9,34 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { useProductForm } from '../hooks/useProductForm';
 import { ComboManager } from './ComboManager';
 import type { Product } from '@/types/types';
+
+/**
+ * Evalúa expresiones matemáticas simples de forma segura
+ * Soporta: +, -, *, /, paréntesis
+ */
+const evaluateExpression = (expr: string): number | null => {
+    try {
+        // Limpiar espacios
+        const cleaned = expr.replace(/\s/g, '');
+        
+        // Validar que solo contenga números, operadores y paréntesis permitidos
+        if (!/^[0-9+\-*/.()]+$/.test(cleaned)) {
+            return null;
+        }
+        
+        // Evaluar usando Function (más seguro que eval)
+        const result = Function(`'use strict'; return (${cleaned})`)();
+        
+        // Validar que el resultado sea un número válido
+        if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+            return result;
+        }
+        
+        return null;
+    } catch (error) {
+        return null;
+    }
+};
 
 interface ProductFormDialogProps {
     visible: boolean;
@@ -45,6 +73,51 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         handleSaveStock
     } = useProductForm({ visible, productToEdit, onSave, onHide });
 
+    // Estado local para el input de cantidad (permite expresiones)
+    const [quantityInput, setQuantityInput] = useState<string>('');
+    const quantityInputRef = useRef<HTMLInputElement>(null);
+
+    // Sincronizar el input con el valor del formulario
+    useEffect(() => {
+        if (stockForm.qtyMove !== null) {
+            setQuantityInput(stockForm.qtyMove.toString());
+        } else {
+            setQuantityInput('');
+        }
+    }, [stockForm.qtyMove]);
+
+    // Procesar expresión matemática
+    const handleQuantityBlur = () => {
+        if (!quantityInput.trim()) {
+            updateStockField('qtyMove', null);
+            return;
+        }
+
+        const result = evaluateExpression(quantityInput);
+        
+        if (result !== null) {
+            // Redondear según si permite decimales
+            const finalValue = allowDecimal ? Math.round(result * 100) / 100 : Math.round(result);
+            updateStockField('qtyMove', finalValue);
+            setQuantityInput(finalValue.toString());
+        } else {
+            // Si no es válido, mantener el valor anterior
+            if (stockForm.qtyMove !== null) {
+                setQuantityInput(stockForm.qtyMove.toString());
+            } else {
+                setQuantityInput('');
+            }
+        }
+    };
+
+    // Procesar al presionar Enter
+    const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleQuantityBlur();
+            e.currentTarget.blur(); // Quitar foco después de calcular
+        }
+    };
+
     // Template para headers de tabs
     const tabHeaderTemplate = (options: any) => (
         <div className="flex align-items-center gap-2 p-3 cursor-pointer" onClick={options.onClick}>
@@ -52,16 +125,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
             <span className="font-bold">{options.title}</span>
         </div>
     );
-
-    // Props comunes para InputNumber con estilo limpio
-    const cleanNumberInputProps = {
-        showButtons: true,
-        buttonLayout: "horizontal" as const,
-        decrementButtonClassName: "p-button-secondary p-button-text text-500",
-        incrementButtonClassName: "p-button-secondary p-button-text text-500",
-        inputClassName: "text-center w-full border-1 border-300 border-noround-x",
-        className: "w-full"
-    };
 
     return (
         <Dialog
@@ -172,15 +235,15 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                     <label className="font-bold">
                                         Cantidad a {activeProduct ? 'Mover' : 'Agregar'}
                                     </label>
-                                    <InputNumber
-                                        value={stockForm.qtyMove}
-                                        onValueChange={(e) => updateStockField('qtyMove', e.value ?? null)}
-                                        minFractionDigits={allowDecimal ? 2 : 0}
-                                        maxFractionDigits={allowDecimal ? 2 : 0}
-                                        {...cleanNumberInputProps}
+                                    <InputText
+                                        ref={quantityInputRef}
+                                        value={quantityInput}
+                                        onChange={(e) => setQuantityInput(e.target.value)}
+                                        onBlur={handleQuantityBlur}
+                                        onKeyDown={handleQuantityKeyDown}
                                         placeholder="0"
+                                        className="w-full"
                                     />
-                                    <small className="text-500">Positivo agrega, negativo quita.</small>
                                 </div>
 
                                 <div className="field col-6 flex flex-column gap-2">
