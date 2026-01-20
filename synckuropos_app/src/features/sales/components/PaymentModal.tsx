@@ -94,7 +94,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         <InputNumber 
                             id="received" 
                             value={receivedAmount ? parseFloat(receivedAmount) : null} 
-                            onValueChange={(e) => setReceivedAmount(e.value?.toString() || '')} 
+                            onValueChange={(e) => setReceivedAmount(e.value?.toString() || '')}
+                            onInput={(e: any) => {
+                                // Actualizar en tiempo real mientras escribe
+                                const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+                                if (rawValue !== '' && !isNaN(parseFloat(rawValue))) {
+                                    setReceivedAmount(rawValue);
+                                }
+                            }}
                             min={0} 
                             maxFractionDigits={2} 
                             placeholder="0.00"
