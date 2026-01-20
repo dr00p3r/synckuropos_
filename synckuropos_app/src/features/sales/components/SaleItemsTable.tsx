@@ -3,6 +3,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { InputNumber, type InputNumberValueChangeEvent } from 'primereact/inputnumber';
+import { Tag } from 'primereact/tag';
 import { useSaleItemsLogic } from '../hooks/useSaleItemsLogic';
 import type { SaleItem } from '../../../types/types';
 import { formatCurrency } from '../../../utils/formatters';
@@ -14,6 +15,31 @@ interface SaleItemsTableProps {
 
 export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items, setSaleItems }) => {
     const { updateItemQuantity, removeItem } = useSaleItemsLogic({ saleItems: items, setSaleItems });
+    
+    // Template para mostrar nombre del producto con indicador de combos
+    const nameBodyTemplate = (item: SaleItem) => {
+        const hasCombos = item.combosApplied && item.combosApplied.length > 0;
+        
+        return (
+            <div className="flex flex-column gap-1">
+                <span>{item.name}</span>
+                {hasCombos && (
+                    <div className="flex gap-1 flex-wrap">
+                        {item.combosApplied!.map((combo, idx) => (
+                            <Tag 
+                                key={idx}
+                                icon="pi pi-box" 
+                                severity="success" 
+                                value={`${combo.combosUsed}×${combo.comboQuantity} = ${formatCurrency(combo.comboPrice * combo.combosUsed)}`}
+                                style={{ fontSize: '0.7rem' }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const priceBodyTemplate = (item: SaleItem) => {
         return formatCurrency(item.unitPrice);
     };
@@ -67,7 +93,7 @@ export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items, setSaleIt
                 className="p-datatable-sm"
                 stripedRows
             >
-                <Column field="name" header="Producto" style={{ minWidth: '200px' }}></Column>
+                <Column field="name" header="Producto" body={nameBodyTemplate} style={{ minWidth: '200px' }}></Column>
                 <Column field="unitPrice" header="Precio" body={priceBodyTemplate} style={{ width: '100px' }}></Column>
                 <Column field="quantity" header="Cant." body={quantityBodyTemplate} style={{ width: '160px' }}></Column>
                 <Column field="totalPrice" header="Total" body={totalBodyTemplate} style={{ width: '100px', fontWeight: 'bold' }}></Column>

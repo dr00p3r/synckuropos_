@@ -1,7 +1,8 @@
 // useSalesLogic.ts
 import { useState } from 'react';
-import { useToast } from '@/hooks';
-import type { Product, SaleItem, SaleSummary } from '../../../types/types';
+import { useToast, useDatabase } from '@/hooks';
+import { productRepository } from '@/features/inventory/services/productRepository';
+import type { Product, SaleItem, SaleSummary, ComboProduct, ComboBreakdown } from '../../../types/types';
 
 interface UseSalesLogicProps {
   saleItems: SaleItem[];
@@ -20,6 +21,44 @@ interface UseSalesLogicReturn {
   handleSaleCompleted: () => void;
 }
 
+/**
+ * Calcula el precio total óptimo usando combos de mayor a menor cantidad
+ */
+const calculatePriceWithCombos = (
+  quantity: number, 
+  basePrice: number, 
+  combos: ComboProduct[]
+): { totalPrice: number; combosApplied: ComboBreakdown[] } => {
+  let remainingQty = quantity;
+  let totalPrice = 0;
+  const combosApplied: ComboBreakdown[] = [];
+
+  // Ordenar combos de mayor a menor cantidad (ya deberían venir así)
+  const sortedCombos = [...combos].sort((a, b) => b.comboQuantity - a.comboQuantity);
+
+  // Aplicar combos desde el más grande
+  for (const combo of sortedCombos) {
+    if (remainingQty >= combo.comboQuantity) {
+      const combosUsed = Math.floor(remainingQty / combo.comboQuantity);
+      totalPrice += combosUsed * combo.comboPrice;
+      remainingQty -= combosUsed * combo.comboQuantity;
+      
+      combosApplied.push({
+        comboQuantity: combo.comboQuantity,
+        comboPrice: combo.comboPrice,
+        combosUsed
+      });
+    }
+  }
+
+  // Agregar unidades restantes al precio base
+  if (remainingQty > 0) {
+    totalPrice += remainingQty * basePrice;
+  }
+
+  return { totalPrice, combosApplied };
+};
+
 export const useSalesLogic = ({ 
   saleItems, 
   setSaleItems, 
@@ -32,48 +71,79 @@ export const useSalesLogic = ({
   const TAX_RATE = 0.15; // 15% IVA
   
   const toast = useToast();
+  const db = useDatabase();
 
   // Add product to sale
-  const addProductToSale = (product: Product) => {
-    setSaleItems(prevItems => {
-      const existingItemIndex = prevItems.findIndex(item => item.productId === product.productId);
+  const addProductToSale = async (product: Product) => {
+    try {
+      // Obtener combos del producto
+      const combos = await productRepository.getActiveCombosByProduct(db, product.productId);
+
+      setSaleItems(prevItems => {
+        const existingItemIndex = prevItems.findIndex(item => item.productId === product.productId);
+        
+        if (existingItemIndex >= 0) {
+          // Product already exists, increment quantity and recalculate
+          const updatedItems = [...prevItems];
+          const existingItem = updatedItems[existingItemIndex];
+          const newQuantity = existingItem.quantity + 1;
+          
+          // Recalcular precio con combos
+          const { totalPrice, combosApplied } = calculatePriceWithCombos(
+            newQuantity,
+            product.basePrice,
+            combos
+          );
+          
+          updatedItems[existingItemIndex] = {
+            ...existingItem,
+            quantity: newQuantity,
+            totalPrice,
+            combosApplied
+          };
+          
+          return updatedItems;
+        } else {
+          // New product
+          const { totalPrice, combosApplied } = calculatePriceWithCombos(
+            1,
+            product.basePrice,
+            combos
+          );
+
+          const newItem: SaleItem = {
+            productId: product.productId,
+            code: product.code || '',
+            name: product.name,
+            unitPrice: product.basePrice,
+            quantity: 1,
+            totalPrice,
+            allowDecimalQuantity: product.allowDecimalQuantity,
+            isTaxable: product.isTaxable,
+            combosApplied
+          };
+          
+          return [...prevItems, newItem];
+        }
+      });
       
-      if (existingItemIndex >= 0) {
-        // Product already exists, increment quantity
-        const updatedItems = [...prevItems];
-        const existingItem = updatedItems[existingItemIndex];
-        const newQuantity = existingItem.quantity + 1;
-        
-        updatedItems[existingItemIndex] = {
-          ...existingItem,
-          quantity: newQuantity,
-          totalPrice: newQuantity * existingItem.unitPrice
-        };
-        
-        return updatedItems;
-      } else {
-        // New product
-        const newItem: SaleItem = {
-          productId: product.productId,
-          code: product.code || '',
-          name: product.name,
-          unitPrice: product.basePrice,
-          quantity: 1,
-          totalPrice: product.basePrice,
-          allowDecimalQuantity: product.allowDecimalQuantity
-        };
-        
-        return [...prevItems, newItem];
-      }
-    });
-    
-    toast.showSuccess(`Producto "${product.name}" agregado a la venta`);
+      toast.showSuccess(`Producto "${product.name}" agregado a la venta`);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.showError('Error al agregar producto');
+    }
   };
 
   // Calculate sale summary
   const calculateSummary = (): SaleSummary => {
     const subtotal = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const tax = subtotal * TAX_RATE;
+    
+    // Calcular impuesto solo sobre productos gravables
+    const taxableAmount = saleItems
+      .filter(item => item.isTaxable)
+      .reduce((sum, item) => sum + item.totalPrice, 0);
+    
+    const tax = taxableAmount * TAX_RATE;
     const total = subtotal + tax;
     
     return { subtotal, tax, total };
