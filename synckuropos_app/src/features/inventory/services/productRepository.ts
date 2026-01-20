@@ -114,6 +114,20 @@ export const productRepository = {
 
     // Agregar un combo
     async addCombo(db: any, productId: string, quantity: number, price: number) {
+        // Validar que no exista un combo con la misma cantidad
+        const existing = await db.comboProducts.findOne({
+            selector: {
+                productId: productId,
+                comboQuantity: quantity,
+                isActive: true,
+                _deleted: false
+            }
+        }).exec();
+
+        if (existing) {
+            throw new Error(`Ya existe un combo con cantidad ${quantity} para este producto`);
+        }
+
         return db.comboProducts.insert({
             comboProductId: uuidv4(),
             productId,
@@ -133,7 +147,7 @@ export const productRepository = {
             return doc.update({
                 $set: { 
                     _deleted: true, 
-                    isActive: false, // Importante marcarlo inactivo
+                    isActive: false,
                     updatedAt: new Date().toISOString() 
                 }
             });
@@ -162,6 +176,27 @@ export const productRepository = {
         } catch (error) {
             console.error("Error fetching last supply cost:", error);
             return null;
+        }
+    },
+
+    /**
+     * Obtiene todos los combos activos de un producto ordenados de mayor a menor cantidad
+     */
+    async getActiveCombosByProduct(db: any, productId: string) {
+        try {
+            const combos = await db.comboProducts.find({
+                selector: {
+                    productId: productId,
+                    isActive: true,
+                    _deleted: false
+                },
+                sort: [{ comboQuantity: 'desc' }] // Mayor a menor
+            }).exec();
+
+            return combos.map((doc: any) => doc.toJSON());
+        } catch (error) {
+            console.error("Error fetching combos:", error);
+            return [];
         }
     }
 };

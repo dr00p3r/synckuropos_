@@ -70,9 +70,14 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
             setQty(null);
             setPrice(null);
             toast.showSuccess('Combo agregado');
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error al agregar combo:', e);
-            toast.showError('Error al agregar combo');
+            // Mostrar mensaje específico si es error de duplicado
+            if (e.message && e.message.includes('Ya existe un combo')) {
+                toast.showError(e.message);
+            } else {
+                toast.showError('Error al agregar combo');
+            }
         } finally {
             setLoading(false);
         }
