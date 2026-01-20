@@ -117,6 +117,14 @@ export interface SaleItem {
     quantity: number;
     totalPrice: number;
     allowDecimalQuantity: boolean;
+    isTaxable: boolean; // Si el producto grava IVA
+    combosApplied?: ComboBreakdown[]; // Información de combos aplicados
+}
+
+export interface ComboBreakdown {
+    comboQuantity: number;
+    comboPrice: number;
+    combosUsed: number; // Cuántas veces se aplicó este combo
 }
 
 export interface SaleSummary {

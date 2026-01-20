@@ -36,7 +36,8 @@ export const salesRepository = {
 
         // 2. Crear Detalles
         const detailsPromises = saleItems.map(item => {
-            const taxAmount = item.totalPrice * TAX_RATE;
+            // Calcular impuesto solo si el producto es gravable
+            const taxAmount = item.isTaxable ? (item.totalPrice * TAX_RATE) : 0;
             
             const saleDetail: SaleDetail = {
                 saleId: sale.saleId!,

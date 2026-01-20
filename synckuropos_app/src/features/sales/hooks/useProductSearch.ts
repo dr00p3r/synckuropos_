@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useDatabase } from '../../../hooks/useDatabase';
 import { useToast } from '../../../hooks/useToast';
 import type { Product } from '../types';
