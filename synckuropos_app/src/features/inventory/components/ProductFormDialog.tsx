@@ -77,7 +77,11 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     const [quantityInput, setQuantityInput] = useState<string>('');
     const quantityInputRef = useRef<HTMLInputElement>(null);
 
-    // Sincronizar el input con el valor del formulario
+    // Estado local para el input de costo (permite expresiones)
+    const [costInput, setCostInput] = useState<string>('');
+    const costInputRef = useRef<HTMLInputElement>(null);
+
+    // Sincronizar el input de cantidad con el valor del formulario
     useEffect(() => {
         if (stockForm.qtyMove !== null) {
             setQuantityInput(stockForm.qtyMove.toString());
@@ -86,7 +90,16 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     }, [stockForm.qtyMove]);
 
-    // Procesar expresión matemática
+    // Sincronizar el input de costo con el valor del formulario
+    useEffect(() => {
+        if (stockForm.cost !== null) {
+            setCostInput(stockForm.cost.toString());
+        } else {
+            setCostInput('');
+        }
+    }, [stockForm.cost]);
+
+    // Procesar expresión matemática para cantidad
     const handleQuantityBlur = () => {
         if (!quantityInput.trim()) {
             updateStockField('qtyMove', null);
@@ -110,11 +123,43 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     };
 
-    // Procesar al presionar Enter
+    // Procesar expresión matemática para costo
+    const handleCostBlur = () => {
+        if (!costInput.trim()) {
+            updateStockField('cost', null);
+            return;
+        }
+
+        const result = evaluateExpression(costInput);
+        
+        if (result !== null) {
+            // Redondear a 2 decimales para costos
+            const finalValue = Math.round(result * 100) / 100;
+            updateStockField('cost', finalValue);
+            setCostInput(finalValue.toString());
+        } else {
+            // Si no es válido, mantener el valor anterior
+            if (stockForm.cost !== null) {
+                setCostInput(stockForm.cost.toString());
+            } else {
+                setCostInput('');
+            }
+        }
+    };
+
+    // Procesar al presionar Enter en cantidad
     const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleQuantityBlur();
-            e.currentTarget.blur(); // Quitar foco después de calcular
+            e.currentTarget.blur();
+        }
+    };
+
+    // Procesar al presionar Enter en costo
+    const handleCostKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleCostBlur();
+            e.currentTarget.blur();
         }
     };
 
@@ -248,14 +293,14 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
 
                                 <div className="field col-6 flex flex-column gap-2">
                                     <label className="font-bold">Costo Unitario ($)</label>
-                                    <InputNumber
-                                        value={stockForm.cost}
-                                        onValueChange={(e) => updateStockField('cost', e.value ?? null)}
-                                        mode="currency"
-                                        currency="USD"
-                                        locale="en-US"
+                                    <InputText
+                                        ref={costInputRef}
+                                        value={costInput}
+                                        onChange={(e) => setCostInput(e.target.value)}
+                                        onBlur={handleCostBlur}
+                                        onKeyDown={handleCostKeyDown}
+                                        placeholder="0.00"
                                         className="w-full"
-                                        inputClassName="w-full"
                                     />
                                 </div>
                             </div>
