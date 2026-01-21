@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useSalesLogic } from '../hooks/useSalesLogic';
 import { ProductSearch } from './ProductSearch';
 import { SaleItemsTable } from './SaleItemsTable';
