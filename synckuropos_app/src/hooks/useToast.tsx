@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useRef, type ReactNode } from 'react';
 import { Toast } from 'primereact/toast';
 
-// 1. Definimos la interfaz de lo que nuestro hook va a exponer
 interface ToastContextType {
     showSuccess: (summary: string, detail?: string) => void;
     showInfo: (summary: string, detail?: string) => void;
@@ -12,12 +11,8 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-// 2. El Provider que envolverá tu App
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Referencia al componente Toast de PrimeReact
     const toastRef = useRef<Toast>(null);
-
-    // Funciones helper para simplificar el uso
     const showSuccess = (summary: string, detail?: string) => {
         toastRef.current?.show({ severity: 'success', summary, detail, life: 3000 });
     };
