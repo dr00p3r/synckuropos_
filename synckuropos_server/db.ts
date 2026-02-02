@@ -1,4 +1,3 @@
-// db.ts
 import { addRxPlugin, createRxDatabase } from 'rxdb';
 import type { RxDatabase } from 'rxdb';
 
@@ -13,6 +12,8 @@ import { debtPaymentSchema } from '../synckuropos_schemas/debtPayment.schema.ts'
 import { saleSchema } from '../synckuropos_schemas/sale.schema.ts';
 import { saleDetailSchema } from '../synckuropos_schemas/saleDetail.schema.ts';
 import { userSchema } from '../synckuropos_schemas/user.schema.ts';
+import { telemetrySchema } from '../synckuropos_schemas/telemetry.schema.ts';
+import { systemHealthSchema } from '../synckuropos_schemas/systemHealth.schema.ts';
 
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
@@ -32,7 +33,7 @@ export const createServerDatabase = async (): Promise<RxDatabase> => {
            * MongoDB connection string
            * @link https://www.mongodb.com/docs/manual/reference/connection-string/
            */
-          connection: 'mongodb://localhost:27017'
+          connection: process.env.MONGODB_CONNECTION!
         }),
       }),
     }),
@@ -50,7 +51,16 @@ export const createServerDatabase = async (): Promise<RxDatabase> => {
     sales: { schema: saleSchema },
     saleDetails: { schema: saleDetailSchema },
     users: { schema: userSchema },
+    telemetry: { schema: telemetrySchema },
+    system_health: { schema: systemHealthSchema },
   });
+
+  // Telemetry: Mark incoming logs as synced so the client can delete them
+  db.collections.telemetry.postInsert(async function (this: any, _docData: any, doc: any) {
+    if (doc.isSynced === false) {
+      await doc.atomicPatch({ isSynced: true });
+    }
+  }, false);
 
   return db;
 };
