@@ -11,7 +11,7 @@
 export const formatCurrency = (amount: number): string => {
   // Convertir de centavos a dólares
   const dollars = amount / 100;
-  
+
   return new Intl.NumberFormat('es-EC', {
     style: 'currency',
     currency: 'USD',
@@ -27,18 +27,18 @@ export const formatCurrency = (amount: number): string => {
  * @returns String de fecha formateada
  */
 export const formatDate = (
-  date: Date | string, 
+  date: Date | string,
   options: Intl.DateTimeFormatOptions = {}
 ): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     ...options
   };
-  
+
   return new Intl.DateTimeFormat('es-EC', defaultOptions).format(dateObj);
 };
 
@@ -77,7 +77,7 @@ export const formatDateTime = (date: Date | string): string => {
  * @returns String de cantidad formateada
  */
 export const formatQty = (
-  quantity: number, 
+  quantity: number,
   options: Intl.NumberFormatOptions = {}
 ): string => {
   const defaultOptions: Intl.NumberFormatOptions = {
@@ -85,7 +85,7 @@ export const formatQty = (
     maximumFractionDigits: 2,
     ...options
   };
-  
+
   return new Intl.NumberFormat('es-EC', defaultOptions).format(quantity);
 };
 
@@ -112,11 +112,11 @@ export const formatPercentage = (value: number, decimals: number = 1): string =>
 export const formatDateRange = (start: Date, end: Date): string => {
   const startStr = formatDateShort(start);
   const endStr = formatDateShort(end);
-  
+
   // Si es el mismo día, mostrar solo una fecha
   if (startStr === endStr) {
     return startStr;
   }
-  
+
   return `${startStr} - ${endStr}`;
 };
