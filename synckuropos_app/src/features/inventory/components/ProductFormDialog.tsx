@@ -11,6 +11,7 @@ import { ComboManager } from './ComboManager';
 import type { Product } from '@/types/types';
 
 /**
+/**
  * Evalúa expresiones matemáticas simples de forma segura
  * Soporta: +, -, *, /, paréntesis
  */
@@ -18,20 +19,20 @@ const evaluateExpression = (expr: string): number | null => {
     try {
         // Limpiar espacios
         const cleaned = expr.replace(/\s/g, '');
-        
+
         // Validar que solo contenga números, operadores y paréntesis permitidos
-        if (!/^[0-9+\-*/.()]+$/.test(cleaned)) {
+        if (!/^[0-9+\-*/.()]+$ /.test(cleaned)) {
             return null;
         }
-        
+
         // Evaluar usando Function (más seguro que eval)
         const result = Function(`'use strict'; return (${cleaned})`)();
-        
+
         // Validar que el resultado sea un número válido
         if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
             return result;
         }
-        
+
         return null;
     } catch (error) {
         return null;
@@ -107,7 +108,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
 
         const result = evaluateExpression(quantityInput);
-        
+
         if (result !== null) {
             // Redondear según si permite decimales
             const finalValue = allowDecimal ? Math.round(result * 100) / 100 : Math.round(result);
@@ -131,7 +132,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
 
         const result = evaluateExpression(costInput);
-        
+
         if (result !== null) {
             // Redondear a 2 decimales para costos
             const finalValue = Math.round(result * 100) / 100;
@@ -180,9 +181,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
             maximizable
         >
             <div className="pt-2">
-                <TabView 
-                    activeIndex={activeIndex} 
-                    onTabChange={(e) => setActiveIndex(e.index)} 
+                <TabView
+                    activeIndex={activeIndex}
+                    onTabChange={(e) => setActiveIndex(e.index)}
                     className="p-0"
                 >
                     {/* TAB 1: GENERAL */}
@@ -202,7 +203,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                     className="w-full"
                                 />
                             </div>
-                            
+
                             <div className="formgrid grid">
                                 <div className="field col-6 flex flex-column gap-2">
                                     <label htmlFor="code" className="font-bold">Código (Opcional)</label>
@@ -227,7 +228,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="flex gap-5 surface-ground p-3 border-round">
                                 <div className="flex align-items-center">
                                     <Checkbox
@@ -246,7 +247,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                     <label htmlFor="decimal" className="ml-2 cursor-pointer">Permite Decimales</label>
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-content-end pt-2">
                                 <Button
                                     label={activeProduct ? "Actualizar Datos" : "Guardar y Continuar"}

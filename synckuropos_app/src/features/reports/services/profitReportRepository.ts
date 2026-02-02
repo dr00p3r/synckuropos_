@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { InventoryMovement, Product } from '../types';
+
+import type { InventoryMovement } from '../types';
 
 function escapeRegExp(string: string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -9,13 +9,13 @@ export const profitRepository = {
     // Buscar productos para el AutoComplete
     async searchProducts(db: any, query: string) {
         if (!query) return [];
-        
+
         const safeQuery = escapeRegExp(query);
 
         const results = await db.products.find({
             selector: {
-                name: { 
-                    $regex: safeQuery, 
+                name: {
+                    $regex: safeQuery,
                     $options: 'i' // 'i' = Case Insensitive
                 }
             },
@@ -33,7 +33,7 @@ export const profitRepository = {
     ): Promise<InventoryMovement[]> {
         const startISO = startDate.toISOString();
         const endISO = endDate.toISOString();
-        
+
         // 1. Obtener VENTAS (Ingresos)
         // Nota: Para filtrar por producto exacto en ventas, primero traemos las ventas del rango
         // y luego filtramos sus detalles. Es más rápido que buscar en todos los detalles.
@@ -43,9 +43,9 @@ export const profitRepository = {
                 createdAt: { $gte: startISO, $lte: endISO }
             }
         }).exec();
-        
+
         const saleIds = salesDocs.map((s: any) => s.saleId);
-        
+
         const saleDetailsDocs = await db.saleDetails.find({
             selector: { saleId: { $in: saleIds } }
         }).exec();
@@ -71,11 +71,11 @@ export const profitRepository = {
             ...saleDetailsDocs.map((d: any) => d.productId),
             ...suppliesDocs.map((s: any) => s.productId)
         ]);
-        
+
         const productsDocs = await db.products.find({
             selector: { productId: { $in: Array.from(allProductIds) } }
         }).exec();
-        
+
         const productMap = new Map<string, string>();
         productsDocs.forEach((p: any) => productMap.set(p.productId, p.name));
 
@@ -88,7 +88,7 @@ export const profitRepository = {
 
             movements.push({
                 id: d.saleDetailId,
-                date: d.createdAt || salesDocs.find((s:any) => s.saleId === d.saleId)?.createdAt, // Fallback fecha
+                date: d.createdAt || salesDocs.find((s: any) => s.saleId === d.saleId)?.createdAt, // Fallback fecha
                 type: 'SALE',
                 productName: productMap.get(d.productId) || 'Desconocido',
                 quantity: d.quantity,
@@ -99,9 +99,9 @@ export const profitRepository = {
         });
 
         suppliesDocs.forEach((s: any) => {
-             if (productIds.length > 0 && !productIds.includes(s.productId)) return;
+            if (productIds.length > 0 && !productIds.includes(s.productId)) return;
 
-             movements.push({
+            movements.push({
                 id: s.supplyingId,
                 date: s.supplyDate,
                 type: 'SUPPLY',
@@ -110,7 +110,7 @@ export const profitRepository = {
                 unitValue: s.unitCost,
                 totalValue: s.quantity * s.unitCost,
                 documentId: s.supplyingId
-             });
+            });
         });
 
         // Ordenar por fecha descendente
