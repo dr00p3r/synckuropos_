@@ -1,0 +1,207 @@
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import { useDatabase } from './useDatabase';
+import { useToast } from './useToast';
+import { productRepository } from '@/features/inventory/services/productRepository';
+import type { SaleItem, Product, ComboProduct, ComboBreakdown, SaleSummary } from '@/types/types';
+
+interface CartContextType {
+    saleItems: SaleItem[];
+    saleStartTime: number | null;
+    addToCart: (product: Product) => Promise<void>;
+    removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => Promise<void>;
+    clearCart: () => void;
+    calculateSummary: () => SaleSummary;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+/**
+ * Calcula el precio total óptimo usando combos de mayor a menor cantidad
+ */
+const calculatePriceWithCombos = (
+    quantity: number,
+    basePrice: number,
+    combos: ComboProduct[]
+): { totalPrice: number; combosApplied: ComboBreakdown[] } => {
+    let remainingQty = quantity;
+    let totalPrice = 0;
+    const combosApplied: ComboBreakdown[] = [];
+
+    // Ordenar combos de mayor a menor cantidad
+    const sortedCombos = [...combos].sort((a, b) => b.comboQuantity - a.comboQuantity);
+
+    // Aplicar combos desde el más grande
+    for (const combo of sortedCombos) {
+        if (remainingQty >= combo.comboQuantity) {
+            const combosUsed = Math.floor(remainingQty / combo.comboQuantity);
+            totalPrice += combosUsed * combo.comboPrice;
+            remainingQty -= combosUsed * combo.comboQuantity;
+
+            combosApplied.push({
+                comboQuantity: combo.comboQuantity,
+                comboPrice: combo.comboPrice,
+                combosUsed
+            });
+        }
+    }
+
+    // Agregar unidades restantes al precio base
+    if (remainingQty > 0) {
+        totalPrice += remainingQty * basePrice;
+    }
+
+    return { totalPrice, combosApplied };
+};
+
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+    const [saleStartTime, setSaleStartTime] = useState<number | null>(null);
+    const db = useDatabase();
+    const toast = useToast();
+    const TAX_RATE = 0.15;
+
+    const addToCart = async (product: Product) => {
+        try {
+            if (saleItems.length === 0) {
+                setSaleStartTime(performance.now());
+            }
+
+            const combos = await productRepository.getActiveCombosByProduct(db, product.productId);
+
+            setSaleItems(prevItems => {
+                const existingItemIndex = prevItems.findIndex(item => item.productId === product.productId);
+
+                if (existingItemIndex >= 0) {
+                    const updatedItems = [...prevItems];
+                    const existingItem = updatedItems[existingItemIndex];
+                    const newQuantity = existingItem.quantity + 1;
+
+                    const { totalPrice, combosApplied } = calculatePriceWithCombos(
+                        newQuantity,
+                        product.basePrice,
+                        combos
+                    );
+
+                    updatedItems[existingItemIndex] = {
+                        ...existingItem,
+                        quantity: newQuantity,
+                        totalPrice,
+                        combosApplied
+                    };
+                    return updatedItems;
+                } else {
+                    // Add new
+                    const { totalPrice, combosApplied } = calculatePriceWithCombos(
+                        1,
+                        product.basePrice,
+                        combos
+                    );
+
+                    const newItem: SaleItem = {
+                        productId: product.productId,
+                        code: product.code || '',
+                        name: product.name,
+                        unitPrice: product.basePrice,
+                        quantity: 1,
+                        totalPrice,
+                        allowDecimalQuantity: product.allowDecimalQuantity,
+                        isTaxable: product.isTaxable,
+                        combosApplied
+                    };
+                    return [...prevItems, newItem];
+                }
+            });
+            toast.showSuccess(`Producto "${product.name}" agregado`);
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            toast.showError('Error al agregar producto al carrito');
+        }
+    };
+
+    const updateQuantity = async (productId: string, quantity: number) => {
+        if (quantity <= 0) {
+            removeFromCart(productId);
+            return;
+        }
+
+        try {
+            const combos = await productRepository.getActiveCombosByProduct(db, productId);
+
+            setSaleItems(prevItems => {
+                const index = prevItems.findIndex(item => item.productId === productId);
+                if (index === -1) return prevItems;
+
+                const updatedItems = [...prevItems];
+                const item = updatedItems[index];
+
+                const { totalPrice, combosApplied } = calculatePriceWithCombos(
+                    quantity,
+                    item.unitPrice,
+                    combos
+                );
+
+                updatedItems[index] = {
+                    ...item,
+                    quantity,
+                    totalPrice,
+                    combosApplied
+                };
+
+                return updatedItems;
+            });
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+        }
+    };
+
+    const removeFromCart = (productId: string) => {
+        setSaleItems(prev => {
+            const next = prev.filter(item => item.productId !== productId);
+            if (next.length === 0) {
+                setSaleStartTime(null);
+            }
+            return next;
+        });
+    };
+
+    const clearCart = () => {
+        setSaleItems([]);
+        setSaleStartTime(null);
+    };
+
+    const calculateSummary = (): SaleSummary => {
+        const subtotal = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+        const taxableAmount = saleItems
+            .filter(item => item.isTaxable)
+            .reduce((sum, item) => sum + item.totalPrice, 0);
+
+        const tax = taxableAmount * TAX_RATE;
+        const total = subtotal + tax;
+
+        return { subtotal, tax, total };
+    };
+
+    return (
+        <CartContext.Provider value={{
+            saleItems,
+            saleStartTime,
+            addToCart,
+            removeFromCart,
+            updateQuantity,
+            clearCart,
+            calculateSummary
+        }}>
+            {children}
+        </CartContext.Provider>
+    );
+};
+
+export const useCart = () => {
+    const context = useContext(CartContext);
+    if (!context) {
+        throw new Error('useCart must be used within a CartProvider');
+    }
+    return context;
+};
