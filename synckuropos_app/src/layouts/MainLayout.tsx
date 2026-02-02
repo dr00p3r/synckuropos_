@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Sidebar } from 'primereact/sidebar';
 import { Button } from 'primereact/button';
 import { Avatar } from 'primereact/avatar';
@@ -8,37 +9,36 @@ import '@/styles/layout.css';
 
 interface MainLayoutProps {
     children: React.ReactNode;
-    activeView: string;
     userRole: string;
-    onNavigate: (viewId: string) => void;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ 
-    children, 
-    activeView, 
-    userRole, 
-    onNavigate 
+export const MainLayout: React.FC<MainLayoutProps> = ({
+    children,
+    userRole,
 }) => {
+    const location = useLocation(); // Hook para saber en qué ruta estamos
     const [visibleMobile, setVisibleMobile] = useState(false);
 
     const renderMenuItem = (item: MenuItem) => {
         if (!item.roles.includes(userRole)) return null;
-        
-        const isActive = activeView === item.id;
-        
+
+        // Comparamos el path actual con el path del item
+        // location.pathname podría ser "/" o "/customers", etc.
+        const isActive = location.pathname === item.path;
+
         return (
             <div key={item.id} className="mb-2">
-                <div 
-                    className={`nav-item p-ripple ${isActive ? 'active' : ''}`}
-                    onClick={() => {
-                        onNavigate(item.id);
-                        setVisibleMobile(false);
-                    }}
+                <Link
+                    to={item.path}
+                    className="no-underline"
+                    onClick={() => setVisibleMobile(false)}
                 >
-                    <i className={`${item.icon} mr-3 text-xl`}></i>
-                    <span className="font-medium">{item.label}</span>
-                    <Ripple />
-                </div>
+                    <div className={`nav-item p-ripple ${isActive ? 'active' : ''}`}>
+                        <i className={`${item.icon} mr-3 text-xl`}></i>
+                        <span className="font-medium">{item.label}</span>
+                        <Ripple />
+                    </div>
+                </Link>
             </div>
         );
     };
@@ -63,7 +63,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
             {/* Footer: Ajustes */}
             <div className="p-3 mt-auto border-top-1 border-white-alpha-10">
-                 {renderMenuItem(SETTINGS_ITEM)}
+                {renderMenuItem(SETTINGS_ITEM)}
             </div>
         </div>
     );
@@ -71,14 +71,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     return (
         <div className="flex h-screen surface-ground overflow-hidden">
             {/* 1. CONTENIDO PRINCIPAL */}
-            <div 
-                className="flex-1 flex flex-column min-h-0" 
+            <div
+                className="flex-1 flex flex-column min-h-0"
                 style={{ marginRight: 'var(--sidebar-width)' }}
             >
                 {/* Topbar Móvil */}
                 <div className="md:hidden flex align-items-center justify-content-between p-3 bg-white shadow-1 flex-shrink-0">
-                     <span className="font-bold text-xl text-900">SyncKuro</span>
-                     <Button icon="pi pi-bars" text rounded onClick={() => setVisibleMobile(true)} />
+                    <span className="font-bold text-xl text-900">SyncKuro</span>
+                    <Button icon="pi pi-bars" text rounded onClick={() => setVisibleMobile(true)} />
                 </div>
 
                 {/* Main: flex-1 + min-h-0 + overflow-hidden para que hijos controlen scroll */}
@@ -93,8 +93,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             </div>
 
             {/* Sidebar Móvil */}
-            <Sidebar 
-                visible={visibleMobile} 
+            <Sidebar
+                visible={visibleMobile}
                 position="right"
                 onHide={() => setVisibleMobile(false)}
                 className="custom-sidebar w-18rem border-none"
