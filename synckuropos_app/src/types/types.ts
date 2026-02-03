@@ -1,4 +1,4 @@
-export interface User{
+export interface User {
     userId: string;
     username: string;
     passwordHash: string;
@@ -9,7 +9,7 @@ export interface User{
     updatedAt: string;
 }
 
-export interface Product{
+export interface Product {
     productId: string;
     code: string | undefined;
     name: string;
@@ -23,7 +23,7 @@ export interface Product{
     updatedAt: string;
 }
 
-export interface ComboProduct{
+export interface ComboProduct {
     comboProductId: string;
     productId: string;
     comboQuantity: number;
@@ -34,7 +34,7 @@ export interface ComboProduct{
     updatedAt: string;
 }
 
-export interface Supplying{  
+export interface Supplying {
     supplyingId: string;
     userId: string;
     supplierName: string;
@@ -49,7 +49,7 @@ export interface Supplying{
     updatedAt: string;
 }
 
-export interface Sale{
+export interface Sale {
     saleId: string;
     userId: string;
     customerId: string;
@@ -62,7 +62,7 @@ export interface Sale{
     updatedAt: string;
 }
 
-export interface SaleDetail{
+export interface SaleDetail {
     saleDetailId?: string;
     saleId: string;
     productId: string;
@@ -74,7 +74,7 @@ export interface SaleDetail{
     _deleted: boolean;
 }
 
-export interface Debt{
+export interface Debt {
     debtId: string;
     customerId: string;
     amount: number;
@@ -83,7 +83,7 @@ export interface Debt{
     updatedAt: string;
 }
 
-export interface DebtPayment{
+export interface DebtPayment {
     debtPaymentId: string;
     debtId: string;
     userId: string;
@@ -94,7 +94,7 @@ export interface DebtPayment{
     updatedAt: string;
 }
 
-export interface Customer{
+export interface Customer {
     customerId: string;
     fullname: string;
     phone: string | undefined;
@@ -106,6 +106,24 @@ export interface Customer{
     _deleted: boolean;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface Telemetry {
+    id: string;
+    timestamp: number;
+    type: string;
+    data: any;
+    isSynced: boolean;
+}
+
+export interface SystemHealth {
+    id: string;
+    last_heartbeat: number;
+    last_failure_at?: number;
+    total_uptime: number;
+    total_crashes: number;
+    current_status: string;
+    integrity_status?: string;
 }
 
 // Tipos para el sistema de ventas

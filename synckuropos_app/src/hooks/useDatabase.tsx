@@ -1,17 +1,19 @@
-import { 
-  useState, 
-  useEffect, 
-  useContext, 
+import {
+  useState,
+  useEffect,
+  useContext,
   createContext,
 } from 'react';
 
-import { getDb } from '../db';
 import { startReplications } from '../db/replication';
+import { getDb } from '../db';
+import { useTelemetry } from './useTelemetry';
+import { TelemetryEvents } from '../types/telemetryEvents';
 
 import type { FC, ReactNode } from 'react';
 import type { RxDatabase, RxCollection } from 'rxdb';
-import type { 
-  Product, 
+import type {
+  Product,
   Customer,
   Supplying,
   ComboProduct,
@@ -19,11 +21,13 @@ import type {
   DebtPayment,
   Sale,
   SaleDetail,
-  User
+  User,
+  Telemetry,
+  SystemHealth
 } from '../types/types';
 
 // Definición del tipo de la base de datos
-export type AppDatabaseCollections = {
+export interface AppDatabaseCollections {
   products: RxCollection<Product>;
   customers: RxCollection<Customer>;
   supplyings: RxCollection<Supplying>;
@@ -33,7 +37,9 @@ export type AppDatabaseCollections = {
   sales: RxCollection<Sale>;
   saleDetails: RxCollection<SaleDetail>;
   users: RxCollection<User>;
-};
+  telemetry: RxCollection<Telemetry>;
+  system_health: RxCollection<SystemHealth>;
+}
 
 export type AppDatabase = RxDatabase<AppDatabaseCollections>;
 
@@ -45,21 +51,27 @@ interface DatabaseProviderProps {
 
 export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
   const [db, setDb] = useState<AppDatabase | null>(null);
+  const { logMetric } = useTelemetry();
 
   useEffect(() => {
     const initDb = async () => {
       try {
         const dbInstance = await getDb();
         setDb(dbInstance);
-        
+
         // Init sample data
         const { initializeSampleData } = await import('../utils/sampleData');
         await initializeSampleData(dbInstance);
         console.log('✅ Base de datos inicializada correctamente');
 
+        // Log Encryption Status
+        // Checking storage parameters or assuming based on configuration
+        // Since we wrap with keyCompression only, not encryption yet:    
+        logMetric(TelemetryEvents.DB_ENCRYPTION_STATUS, { isEncrypted: false });
+
         // Init replications
-        //await startReplications(dbInstance);
-        //console.log('✅ Replicaciones iniciadas correctamente');
+        await startReplications(dbInstance);
+        console.log('✅ Replicaciones iniciadas correctamente');
 
       } catch (error) {
         console.error('❌ Error inicializando la base de datos:', error);
@@ -71,16 +83,16 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
 
   if (!db) {
     return (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          fontSize: '18px',
-          color: '#2A423E'
-        }}>
-          🔄 Cargando base de datos...
-        </div>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontSize: '18px',
+        color: '#2A423E'
+      }}>
+        🔄 Cargando base de datos...
+      </div>
     );
   }
 
@@ -89,10 +101,10 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
 
 export const useDatabase = (): AppDatabase => {
   const db = useContext(DbContext);
-  
+
   if (!db) {
     throw new Error('useDatabase debe ser usado dentro de un DatabaseProvider');
   }
-  
+
   return db;
 };

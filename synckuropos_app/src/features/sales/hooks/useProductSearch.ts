@@ -3,14 +3,18 @@ import { useDatabase } from '../../../hooks/useDatabase';
 import { useToast } from '../../../hooks/useToast';
 import type { Product } from '../types';
 import type { AutoCompleteCompleteEvent } from 'primereact/autocomplete';
+import { useTelemetry } from '@/hooks/useTelemetry';
+import { TelemetryEvents } from '@/types/telemetryEvents';
 
 export const useProductSearch = () => {
     const [suggestions, setSuggestions] = useState<Product[]>([]);
     const db = useDatabase();
     const toast = useToast();
+    const { logMetric } = useTelemetry();
 
     const searchProducts = async (event: AutoCompleteCompleteEvent) => {
         const query = event.query.trim();
+        const startTime = performance.now();
 
         if (!query) {
             setSuggestions([]);
@@ -34,6 +38,12 @@ export const useProductSearch = () => {
                 },
                 limit: 10
             }).exec();
+
+            const durationMs = performance.now() - startTime;
+            logMetric(TelemetryEvents.PERF_SEARCH_LATENCY, {
+                durationMs,
+                resultCount: results.length
+            });
 
             setSuggestions(results);
         } catch (error) {

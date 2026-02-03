@@ -40,8 +40,8 @@ export const salesRepository = {
             const taxAmount = item.isTaxable ? (item.totalPrice * TAX_RATE) : 0;
             
             const saleDetail: SaleDetail = {
-                saleId: sale.saleId!,
-                productId: item.productId!,
+                saleId: sale.saleId,
+                productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.totalPrice,
@@ -62,7 +62,7 @@ export const salesRepository = {
             if (debtAmount > 0) {
                 const debt: Debt = {
                     debtId: uuidv4(),
-                    customerId: customer.customerId!,
+                    customerId: customer.customerId,
                     amount: debtAmount,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
@@ -74,7 +74,7 @@ export const salesRepository = {
                 if (receivedAmount > 0) {
                     const payment: DebtPayment = {
                         debtPaymentId: uuidv4(),
-                        debtId: debt.debtId!,
+                        debtId: debt.debtId,
                         userId: userId,
                         amountPaid: receivedAmount,
                         paymentDate: new Date().toISOString(),

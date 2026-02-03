@@ -1,7 +1,10 @@
 import { useState, useEffect, useContext, createContext } from 'react';
 import bcrypt from 'bcryptjs';
 import { useDatabase } from './useDatabase';
+import { setReplicationAuth } from '../db/replication';
 import { useToast } from './useToast';
+import { useTelemetry } from './useTelemetry';
+import { TelemetryEvents } from '../types/telemetryEvents';
 import { v4 as uuidv4 } from 'uuid';
 import type { FC, ReactNode } from 'react';
 import type { User } from '../types/types';
@@ -27,6 +30,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const db = useDatabase();
   const { showSuccess, showError } = useToast();
+  const { logMetric } = useTelemetry();
 
   // Verificar si hay un usuario logueado al iniciar la aplicación
   useEffect(() => {
@@ -34,11 +38,14 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       try {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
+          const user = JSON.parse(storedUser);
+          setCurrentUser(user);
+          setReplicationAuth(user.userId);
         }
       } catch (error) {
         console.error('Error al cargar usuario del localStorage:', error);
         localStorage.removeItem('currentUser');
+        setReplicationAuth(null);
       } finally {
         setIsLoading(false);
       }
@@ -50,7 +57,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      
+
       // Buscar el usuario por username
       const userDoc = await db.users.findOne({
         selector: {
@@ -65,11 +72,12 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       }
 
       const user = userDoc.toJSON() as User;
-      
+
       // Verificar la contraseña
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-      
+
       if (!isPasswordValid) {
+        logMetric(TelemetryEvents.AUTH_FAILURE, { attemptId: uuidv4(), reason: 'invalid_password' });
         showError('Contraseña incorrecta');
         return false;
       }
@@ -77,11 +85,13 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       // Login exitoso
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
+      setReplicationAuth(user.userId); // Update replication auth
       showSuccess(`Bienvenido, ${user.username}!`);
       return true;
 
     } catch (error) {
       console.error('Error en login:', error);
+      logMetric(TelemetryEvents.AUTH_FAILURE, { attemptId: uuidv4(), reason: 'error' });
       showError('Error al iniciar sesión');
       return false;
     } finally {
@@ -92,17 +102,18 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
+    setReplicationAuth(null);
     showSuccess('Sesión cerrada exitosamente');
   };
 
   const updateUserPassword = async (
-    userId: string, 
-    currentPassword: string, 
+    userId: string,
+    currentPassword: string,
     newPassword: string
   ): Promise<boolean> => {
     try {
       setIsLoading(true);
-      
+
       // Buscar el usuario
       const userDoc = await db.users.findOne({
         selector: { userId }
@@ -114,10 +125,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       }
 
       const user = userDoc.toJSON() as User;
-      
+
       // Verificar la contraseña actual
       const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
-      
+
       if (!isCurrentPasswordValid) {
         showError('La contraseña actual es incorrecta');
         return false;
@@ -136,7 +147,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
       });
 
       // Si es el usuario actual, actualizar la información en el estado
-      if (currentUser && currentUser.userId === userId) {
+      if (currentUser?.userId === userId) {
         const updatedUser = { ...currentUser, passwordHash: newPasswordHash, updatedAt: new Date().toISOString() };
         setCurrentUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
@@ -154,14 +165,14 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const createUser = async (userData: { 
-    username: string; 
-    password: string; 
-    role: 'admin' | 'cajero' 
+  const createUser = async (userData: {
+    username: string;
+    password: string;
+    role: 'admin' | 'cajero'
   }): Promise<boolean> => {
     try {
       setIsLoading(true);
-      
+
       // Verificar si el usuario ya existe
       const existingUser = await db.users.findOne({
         selector: { username: userData.username }
@@ -235,10 +246,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
-  
+
   return context;
 };

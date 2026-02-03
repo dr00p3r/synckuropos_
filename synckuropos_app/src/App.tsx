@@ -1,31 +1,31 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginScreen } from '@/features/auth';
-import { SalesScreen } from '@/features/sales';
-import { InventoryScreen } from '@/features/inventory';
-import { CustomersScreen } from '@/features/customers';
-import { ReportsScreen } from '@/features/reports';
+
+// Lazy loading de las pantallas principales
+// Nota: Como son exportaciones nombradas, usamos .then(module => ({ default: module.Componente }))
+const SalesScreen = lazy(() => import('@/features/sales').then(module => ({ default: module.SalesScreen })));
+const InventoryScreen = lazy(() => import('@/features/inventory').then(module => ({ default: module.InventoryScreen })));
+const CustomersScreen = lazy(() => import('@/features/customers').then(module => ({ default: module.CustomersScreen })));
+const ReportsScreen = lazy(() => import('@/features/reports').then(module => ({ default: module.ReportsScreen })));
 
 import { useAuth } from './hooks/useAuth';
+import { useTelemetry } from './hooks/useTelemetry';
 import { MainLayout } from '@/layouts/MainLayout';
-import { ProgressSpinner } from 'primereact/progressspinner';
-import type { SaleItem } from '@/types/types';
+import { LoadingFallback } from '@/components/common/LoadingFallback';
 
 function App() {
   const { currentUser, isLoading } = useAuth();
-  const [currentView, setCurrentView] = useState('venta');
-  
-  // Estado del carrito (Persistencia temporal al navegar)
-  // TODO: Mover esto a un Contexto (CartContext) en la siguiente fase
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const { setAuth } = useTelemetry(); // Start telemetry worker (singleton)
 
-  // 1. PANTALLA DE CARGA (Usando PrimeReact)
+  // Bridge Auth -> Telemetry
+  useEffect(() => {
+    setAuth(currentUser?.userId || null);
+  }, [currentUser, setAuth]);
+
+  // 1. PANTALLA DE CARGA (Usando Componente Reutilizable)
   if (isLoading) {
-    return (
-      <div className="flex flex-column align-items-center justify-content-center h-screen surface-ground">
-        <ProgressSpinner strokeWidth="4" />
-        <span className="text-700 font-medium mt-3">Iniciando sistema...</span>
-      </div>
-    );
+    return <LoadingFallback message="Iniciando sistema..." />;
   }
 
   // 2. PANTALLA DE LOGIN (Sin Layout)
@@ -34,46 +34,23 @@ function App() {
   }
 
   // 3. LÓGICA DE RUTEO SIMPLE
-  const renderView = () => {
-    switch (currentView) {
-      case 'venta':
-        return (
-          <SalesScreen 
-            saleItems={saleItems}
-            setSaleItems={setSaleItems}
-            onClearSale={() => setSaleItems([])}
-          />
-        );
-      case 'inventario':
-        return <InventoryScreen />;
-      case 'clientes':
-        return <CustomersScreen />;
-      case 'reportes':
-        return <ReportsScreen />
-      case 'ajustes':
-        //return <SettingsScreen />;
-        return (
-            <div className="p-5 text-center">
-                <h2>Página no encontrada</h2>
-            </div>
-        );
-      default:
-        return (
-            <div className="p-5 text-center">
-                <h2>Página no encontrada</h2>
-            </div>
-        );
-    }
-  };
 
   // 4. APP PRINCIPAL
   return (
     <MainLayout
-      activeView={currentView}
       userRole={currentUser.role || 'cajero'}
-      onNavigate={setCurrentView}
     >
-      {renderView()}
+      <Suspense fallback={<LoadingFallback fullScreen={false} />}>
+        <Routes>
+          <Route path="/" element={<SalesScreen />} />
+          <Route path="/inventory" element={<InventoryScreen />} />
+          <Route path="/customers" element={<CustomersScreen />} />
+          <Route path="/reports" element={<ReportsScreen />} />
+
+          {/* Fallback para rutas no encontradas */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </MainLayout>
   );
 }

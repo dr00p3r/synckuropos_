@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDatabase, useToast, useAuth } from '@/hooks';
 import { productRepository } from '../services/productRepository';
 import type { Product } from '@/types/types';
+import { useTelemetry } from '@/hooks/useTelemetry';
+import { TelemetryEvents } from '@/types/telemetryEvents';
 
 interface UseProductFormProps {
     visible: boolean;
@@ -26,10 +28,11 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
     const db = useDatabase();
     const toast = useToast();
     const { currentUser } = useAuth();
+    const { logMetric } = useTelemetry();
 
     // Estado del producto creado en el flujo de creación
     const [createdProductData, setCreatedProductData] = useState<Product | null>(null);
-    
+
     // Producto activo (editando o recién creado)
     const activeProduct = productToEdit || createdProductData;
     const isEditMode = !!activeProduct;
@@ -50,7 +53,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
     // Helper para actualizar campos del stock form
     const updateStockField = useCallback(<K extends keyof StockFormState>(
-        field: K, 
+        field: K,
         value: StockFormState[K]
     ) => {
         setStockForm(prev => ({ ...prev, [field]: value }));
@@ -86,8 +89,10 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         if (visible) {
             if (productToEdit) {
                 loadProductData(productToEdit);
+                logMetric(TelemetryEvents.TASK_INIT, { taskName: 'INVENTORY_UPDATE' });
             } else {
                 resetForm();
+                logMetric(TelemetryEvents.TASK_INIT, { taskName: 'INVENTORY_CREATE' });
             }
         }
     }, [visible, productToEdit, loadProductData, resetForm]);
@@ -96,7 +101,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
     useEffect(() => {
         const fetchLastCost = async () => {
             if (!activeProduct?.productId || !db) return;
-            
+
             try {
                 const lastCost = await productRepository.getLastSupplyCost(db, activeProduct.productId);
                 if (lastCost !== null) {
@@ -139,6 +144,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
                 // Si estamos editando uno existente desde el inicio, cerramos
                 if (productToEdit) {
+                    logMetric(TelemetryEvents.TASK_COMPLETION, { taskName: 'INVENTORY_UPDATE' });
                     onSave();
                     onHide();
                 }
@@ -153,12 +159,14 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
                 });
 
                 toast.showSuccess('Producto creado. Configure el stock.');
+                logMetric(TelemetryEvents.TASK_COMPLETION, { taskName: 'INVENTORY_CREATE' });
                 setCreatedProductData(newProd);
                 setActiveIndex(1); // Mover al tab de Stock
                 onSave(); // Refrescar lista de fondo
             }
         } catch (error) {
             console.error(error);
+            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'save_error' });
             toast.showError('Error al guardar');
         } finally {
             setLoading(false);
@@ -168,7 +176,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
     // Guardar movimiento de stock
     const handleSaveStock = useCallback(async () => {
         if (!activeProduct || !db) return;
-        
+
         if (!stockForm.qtyMove || stockForm.qtyMove === 0) {
             toast.showInfo('Ingrese una cantidad válida');
             return;
@@ -199,7 +207,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         isEditMode,
         activeIndex,
         loading,
-        
+
         // Form General
         name,
         setName,
@@ -211,11 +219,11 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         setIsTaxable,
         allowDecimal,
         setAllowDecimal,
-        
+
         // Form Stock
         stockForm,
         updateStockField,
-        
+
         // Actions
         setActiveIndex,
         handleSaveGeneral,

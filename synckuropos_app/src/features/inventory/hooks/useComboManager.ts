@@ -37,7 +37,7 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
             const query = productRepository.getCombosByProduct(db, productId);
             
             // Verificar que la query es válida antes de suscribirse
-            if (query && query.$) {
+            if (query?.$) {
                 subscription = query.$.subscribe({
                     next: (docs: any[]) => {
                         setCombos(docs.map((d: any) => d.toJSON()));
@@ -73,7 +73,7 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
         } catch (e: any) {
             console.error('Error al agregar combo:', e);
             // Mostrar mensaje específico si es error de duplicado
-            if (e.message && e.message.includes('Ya existe un combo')) {
+            if (e.message?.includes('Ya existe un combo')) {
                 toast.showError(e.message);
             } else {
                 toast.showError('Error al agregar combo');

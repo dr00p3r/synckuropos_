@@ -88,8 +88,8 @@ export const useCustomers = () => {
             const search = searchTerm.toLowerCase();
             result = result.filter(c =>
                 c.fullname.toLowerCase().includes(search) ||
-                (c.phone && c.phone.toLowerCase().includes(search)) ||
-                (c.email && c.email.toLowerCase().includes(search))
+                (c.phone?.toLowerCase().includes(search)) ||
+                (c.email?.toLowerCase().includes(search))
             );
         }
 

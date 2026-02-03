@@ -16,7 +16,7 @@ const sampleProducts: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     _deleted: false
   },
   {
-    productId: '2', 
+    productId: '2',
     code: '7501234567891',
     name: 'Pepsi 600ml',
     stock: 80,
@@ -28,7 +28,7 @@ const sampleProducts: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
   },
   {
     productId: '3',
-    code: '7501234567892', 
+    code: '7501234567892',
     name: 'Agua Natural 1L',
     stock: 150,
     basePrice: 120,
@@ -126,7 +126,7 @@ const sampleUsers: Omit<User, 'createdAt' | 'updatedAt' | 'passwordHash'>[] = [
     _deleted: false
   },
   {
-    userId: 'cajero-001', 
+    userId: 'cajero-001',
     username: 'cajero',
     role: 'cajero',
     isActive: true,
@@ -151,19 +151,14 @@ const FinalConsumerClient: Customer = {
 export const initializeSampleData = async (db: AppDatabase) => {
   try {
     const currentTime = new Date().toISOString();
-    
-    // Verificar si el cliente "Consumidor Final" ya existe
-    const existingClient = await db.collections.customers
-      .findOne({ selector: { customerId: FinalConsumerClient.customerId } })
-      .exec();
-    if (!existingClient){
-      await db.collections.customers.insert({
-        ...FinalConsumerClient,
-        createdAt: currentTime,
-        updatedAt: currentTime
-      });
-    }
-    
+
+    // Insertar o actualizar cliente "Consumidor Final" usando upsert para evitar conflictos
+    await db.customers.upsert({
+      ...FinalConsumerClient,
+      createdAt: currentTime,
+      updatedAt: currentTime
+    });
+
     // Verificar si ya existen productos
     const existingProducts = await db.collections.products.find().limit(1).exec();
 
@@ -183,7 +178,7 @@ export const initializeSampleData = async (db: AppDatabase) => {
 
     // Verificar si ya existen usuarios
     const existingUsers = await db.collections.users.find().limit(1).exec();
-    
+
     if (existingUsers.length === 0) {
       // Insertar usuarios de ejemplo con contraseñas hasheadas
       const saltRounds = 10;
@@ -205,7 +200,7 @@ export const initializeSampleData = async (db: AppDatabase) => {
     } else {
       console.log('Los usuarios de ejemplo ya existen en la base de datos');
     }
-    
+
   } catch (error) {
     console.error('❌ Error insertando datos de ejemplo:', error);
     throw error;
@@ -217,7 +212,7 @@ export const clearSampleData = async (db: AppDatabase) => {
   try {
     const sampleProductIds = sampleProducts.map(p => p.productId);
     const sampleUserIds = sampleUsers.map(u => u.userId);
-    
+
     // Eliminar productos de ejemplo
     const productsToDelete = await db.collections.products
       .find({
@@ -243,7 +238,7 @@ export const clearSampleData = async (db: AppDatabase) => {
     for (const user of usersToDelete) {
       await user.remove();
     }
-    
+
     console.log('🗑️ Productos de ejemplo eliminados:', productsToDelete.length);
     console.log('🗑️ Usuarios de ejemplo eliminados:', usersToDelete.length);
   } catch (error) {

@@ -21,7 +21,7 @@ export const ProfitDetailView: React.FC = () => {
 
     // --- AGRUPAR MOVIMIENTOS POR FECHA ---
     const groupedMovements = useMemo(() => {
-        const groups: { [key: string]: any[] } = {};
+        const groups: Record<string, any[]> = {};
         reportData.movements.forEach((mov: any) => {
             const dateKey = new Date(mov.date).toLocaleDateString('es-EC', { 
                 year: 'numeric', 

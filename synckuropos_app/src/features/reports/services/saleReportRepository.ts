@@ -1,9 +1,9 @@
-import type { 
-    Sale, 
-    SaleDetail, 
-    Product, 
-    SaleWithDetails, 
-    UserOption 
+import type {
+    Sale,
+    SaleDetail,
+
+    SaleWithDetails,
+    UserOption
 } from '../types';
 
 export const reportRepository = {
@@ -16,9 +16,9 @@ export const reportRepository = {
     },
 
     async getSalesWithDetails(
-        db: any, 
-        startDate: Date, 
-        endDate: Date, 
+        db: any,
+        startDate: Date,
+        endDate: Date,
         userId?: string
     ): Promise<SaleWithDetails[]> {
         const startISO = startDate.toISOString();
@@ -36,7 +36,7 @@ export const reportRepository = {
         if (sales.length === 0) return [];
 
         const saleIds = sales.map(s => s.saleId);
-        
+
         const detailsDocs = await db.saleDetails.find({
             selector: {
                 saleId: { $in: saleIds }
@@ -50,14 +50,14 @@ export const reportRepository = {
                 productId: { $in: productIds }
             }
         }).exec();
-        
+
         const productMap = new Map<string, string>();
         productsDocs.forEach((p: any) => productMap.set(p.productId, p.name));
 
         return sales.map(sale => {
             // Filtrar detalles de esta venta
             const myDetails = allDetails.filter(d => d.saleId === sale.saleId);
-            
+
             // Enriquecer detalle con nombre de producto
             const enrichedDetails = myDetails.map(detail => ({
                 ...detail,

@@ -220,8 +220,8 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                                     Deudas Pendientes ({debtSummary.debtsCount})
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    {debtSummary.debts.map((debt, index) => (
-                                                        <div 
+                                                    {debtSummary.debts.map((debt) => (
+                                                        <div
                                                             key={debt.debtId}
                                                             className="surface-card p-3 border-round flex justify-content-between align-items-center"
                                                         >
@@ -230,11 +230,11 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                                                     {new Date(debt.createdAt).toLocaleDateString()}
                                                                 </span>
                                                                 <span className="text-sm">
-                                                                    Original: {formatCurrency(debt.amount)} | 
+                                                                    Original: {formatCurrency(debt.amount)} |
                                                                     Pagado: {formatCurrency(debt.totalPaid)}
                                                                 </span>
                                                             </div>
-                                                            <Tag 
+                                                            <Tag
                                                                 value={formatCurrency(debt.pendingAmount)}
                                                                 severity="danger"
                                                             />

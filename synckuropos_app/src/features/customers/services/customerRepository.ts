@@ -43,7 +43,7 @@ export const customerRepository = {
      * Obtiene todos los clientes con su deuda calculada
      * @param onlyActive - Si true, solo devuelve clientes activos (default: false)
      */
-    async getCustomersWithDebt(db: any, onlyActive: boolean = false): Promise<CustomerWithDebt[]> {
+    async getCustomersWithDebt(db: any, onlyActive = false): Promise<CustomerWithDebt[]> {
         const selector: any = { _deleted: false };
         
         if (onlyActive) {
