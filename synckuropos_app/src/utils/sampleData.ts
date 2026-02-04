@@ -152,7 +152,6 @@ export const initializeSampleData = async (db: AppDatabase) => {
   try {
     const currentTime = new Date().toISOString();
 
-    // Insertar o actualizar cliente "Consumidor Final" usando upsert para evitar conflictos
     await db.customers.upsert({
       ...FinalConsumerClient,
       createdAt: currentTime,

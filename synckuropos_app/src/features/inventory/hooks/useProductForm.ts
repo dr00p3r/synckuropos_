@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDatabase, useToast, useAuth } from '@/hooks';
+import { confirmDialog } from 'primereact/confirmdialog';
 import { productRepository } from '../services/productRepository';
 import type { Product } from '@/types/types';
 import { useTelemetry } from '@/hooks/useTelemetry';
@@ -125,8 +126,17 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
     const handleSaveGeneral = useCallback(async () => {
         if (!name.trim()) {
             toast.showError('El nombre es obligatorio');
+            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'empty_name' });
             return;
         }
+
+        // Validación de precio > 0
+        if (!price || price <= 0) {
+            toast.showError('El precio debe ser mayor a 0');
+            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'invalid_price' });
+            return;
+        }
+
         if (!db) return;
 
         setLoading(true);
@@ -161,31 +171,25 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
                 toast.showSuccess('Producto creado. Configure el stock.');
                 logMetric(TelemetryEvents.TASK_COMPLETION, { taskName: 'INVENTORY_CREATE' });
                 setCreatedProductData(newProd);
-                setActiveIndex(1); // Mover al tab de Stock
-                onSave(); // Refrescar lista de fondo
+                setActiveIndex(1);
+                onSave();
             }
         } catch (error) {
             console.error(error);
-            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'save_error' });
             toast.showError('Error al guardar');
         } finally {
             setLoading(false);
         }
     }, [name, code, price, isTaxable, allowDecimal, activeProduct, productToEdit, db, toast, onSave, onHide]);
 
-    // Guardar movimiento de stock
-    const handleSaveStock = useCallback(async () => {
+    // Lógica real de guardado de stock (extraída para reuso en confirmación)
+    const executeStockSave = useCallback(async () => {
         if (!activeProduct || !db) return;
-
-        if (!stockForm.qtyMove || stockForm.qtyMove === 0) {
-            toast.showInfo('Ingrese una cantidad válida');
-            return;
-        }
 
         setLoading(true);
         try {
             await productRepository.registerStockMovement(db, activeProduct, {
-                quantityToMove: stockForm.qtyMove.toString(),
+                quantityToMove: stockForm.qtyMove?.toString() || '0',
                 costPerUnit: stockForm.cost?.toString() || '0',
                 reason: stockForm.reason,
                 newSalePrice: ''
@@ -193,13 +197,42 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
             toast.showSuccess('Stock actualizado');
             setStockForm(INITIAL_STOCK_STATE);
-            onSave(); // Refrescar lista
+            onSave();
         } catch (e) {
             toast.showError('Error al mover stock');
         } finally {
             setLoading(false);
         }
-    }, [activeProduct, stockForm, db, currentUser, toast, onSave]);
+    }, [activeProduct, db, stockForm, currentUser, toast, onSave]);
+
+    // Guardar movimiento de stock
+    const handleSaveStock = useCallback(async () => {
+        if (!activeProduct || !db) return;
+
+        if (!stockForm.qtyMove || stockForm.qtyMove === 0) {
+            toast.showInfo('Ingrese una cantidad válida');
+            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'empty_quantity' });
+            return;
+        }
+
+        // Advertencia si el costo es 0 o null
+        if (!stockForm.cost || stockForm.cost === 0) {
+            confirmDialog({
+                message: 'El costo registrado es 0. ¿Es un producto bonificado o gratuito? Esto afectará el cálculo de márgenes.',
+                header: 'Confirmación de Costo Cero',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Sí, es correcto',
+                rejectLabel: 'Corregir',
+                accept: () => executeStockSave(),
+                reject: () => {
+                    logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'zero_cost_warning' });
+                }
+            });
+            return;
+        }
+
+        await executeStockSave();
+    }, [activeProduct, db, stockForm.qtyMove, stockForm.cost, executeStockSave]);
 
     return {
         // Estado

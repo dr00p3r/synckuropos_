@@ -36,7 +36,7 @@ export const SalesScreen: React.FC = () => {
         logMetric(TelemetryEvents.UX_INTERACTION_METRICS, {
             mouseClicks: clickCount.current,
             keyPresses: keyCount.current,
-            saleId: 'transaction_completed' // Placeholder as we don't have exact ID here yet without prop drilling
+            saleId: 'transaction_completed'
         });
         clickCount.current = 0;
         keyCount.current = 0;

@@ -3,6 +3,8 @@ import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { RxDBLeaderElectionPlugin } from 'rxdb/plugins/leader-election';
+import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
+import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 
 import { telemetrySchema } from '../../../synckuropos_schemas/telemetry.schema.ts';
 import { systemHealthSchema } from '../../../synckuropos_schemas/systemHealth.schema.ts';
@@ -14,6 +16,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 addRxPlugin(RxDBLeaderElectionPlugin);
+addRxPlugin(RxDBQueryBuilderPlugin);
+addRxPlugin(RxDBUpdatePlugin);
 
 // This creates a stable reference that persists across function calls
 const storage = wrappedValidateAjvStorage({
@@ -26,7 +30,7 @@ let dbPromise: Promise<AppDatabase> | null = null;
 
 const createWorkerDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuropos-telemetry',
+        name: 'synckuropos-telemetry-2',
         storage: storage,
         multiInstance: true,
         eventReduce: true,
@@ -64,10 +68,8 @@ self.onmessage = async (e: MessageEvent) => {
             await initSystemHealth(db);
             await setupReplication(db);
         } else if (type === 'SET_AUTH') {
-            // Update auth token for replication
             authToken = payload;
             if (activeReplications.length > 0) {
-                console.log('[Worker] Restarting replication with new token');
                 await Promise.all(activeReplications.map(r => r.cancel()));
                 activeReplications = [];
                 await setupReplication(db);
@@ -120,23 +122,41 @@ async function initSystemHealth(db: AppDatabase) {
 
 async function handleHeartbeat(db: AppDatabase, payload: { timestamp: number }) {
     const collection = db.system_health;
-    const doc = await collection.findOne(SYSTEM_HEALTH_ID).exec();
-    if (doc) {
-        // Calculate uptime delta
-        const delta = payload.timestamp - doc.last_heartbeat;
-        if (delta > 0 && delta < 60000) { // Only add reasonable deltas
-            await doc.patch({
-                last_heartbeat: payload.timestamp,
-                total_uptime: doc.total_uptime + delta
-            });
-        } else {
-            await doc.patch({
-                last_heartbeat: payload.timestamp
-            });
+
+    // Retry logic with exponential backoff
+    let retries = 0;
+    const maxRetries = 3;
+
+    while (retries < maxRetries) {
+        try {
+            // Get fresh document each retry
+            const doc = await collection.findOne(SYSTEM_HEALTH_ID).exec();
+            if (doc) {
+                const delta = payload.timestamp - doc.last_heartbeat;
+                if (delta > 0 && delta < 60000) {
+                    await doc.patch({
+                        last_heartbeat: payload.timestamp,
+                        total_uptime: doc.total_uptime + delta
+                    });
+                } else {
+                    await doc.patch({
+                        last_heartbeat: payload.timestamp
+                    });
+                }
+                return; // Success!
+            }
+        } catch (error: any) {
+            if (error.code === 'CONFLICT' && retries < maxRetries - 1) {
+                retries++;
+                // Exponential backoff: 50ms, 100ms, 200ms
+                await new Promise(resolve => setTimeout(resolve, 50 * Math.pow(2, retries)));
+                continue;
+            }
+            // If not a conflict or max retries reached, throw
+            throw error;
         }
     }
 }
-
 // Batching Configuration
 const BATCH_SIZE = 50;
 const FLUSH_INTERVAL = 5000;
@@ -144,13 +164,7 @@ let logBuffer: any[] = [];
 let flushTimeout: any = null;
 
 // Hashing helper (SHA-256)
-async function generateChecksum(data: any): Promise<string> {
-    const str = JSON.stringify(data);
-    const msgBuffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+
 
 // Sanitization helper
 function sanitizePayload(payload: any): any {
@@ -181,15 +195,16 @@ async function flushBuffer(db: AppDatabase) {
 
     const batch = [...logBuffer];
     logBuffer = [];
-    if (flushTimeout) clearTimeout(flushTimeout);
+    if (flushTimeout) {
+        clearTimeout(flushTimeout);
+        flushTimeout = null;
+    }
 
     try {
+        console.log('[Telemetry] Flushing batch:', batch);
         await db.telemetry.bulkInsert(batch);
-        // console.log(`[Telemetry] Flushed ${batch.length} logs.`);
     } catch (error) {
         console.error('[Telemetry] Failed to flush logs:', error);
-        // Retry logic could go here, for now we log error
-        // Re-queueing might cause loop if error is persistent
     }
 }
 
@@ -197,21 +212,12 @@ async function logTelemetry(db: AppDatabase, type: string, data: any) {
     const sanitizedData = sanitizePayload(data);
     const timestamp = Date.now();
 
-    // Calculate checksum for integrity
-    // We hash the critical fields: type, timestamp, data
-    // const checksum = await generateChecksum({ type, timestamp, data: sanitizedData });
-    // console.debug('[Telemetry] Checksum:', checksum); // Unused for now until schema update
-
     const logEntry = {
         id: crypto.randomUUID(),
         timestamp,
         type,
         data: sanitizedData,
         isSynced: false,
-        // We could store checksum in metadata or a separate field if schema supported it
-        // For now, checking integrity implies re-calculating this. 
-        // If we want to STORE it to detect tampering on disk, we need a field.
-        // Assuming we verify consistency logic rather than disk tampering for now.
     };
 
     logBuffer.push(logEntry);
@@ -224,16 +230,12 @@ async function logTelemetry(db: AppDatabase, type: string, data: any) {
 }
 
 async function checkIntegrity(_db: AppDatabase) {
-    console.log('Running integrity check...');
     // 1. Check for unsynced accumulation
     const unsyncedCount = await _db.telemetry.count().where('isSynced').eq(false).exec();
     if (unsyncedCount > 2000) {
         console.warn(`[Integrity] High unsynced logs: ${unsyncedCount}`);
     }
 
-    // 2. Sample check for corruption (Logical)
-    // In a real scenario, we would store a 'hash' field and compare it here.
-    // For now, we simulate a check by verifying structure.
     const sample = await _db.telemetry.find().limit(10).exec();
     let errors = 0;
     for (const doc of sample) {
@@ -244,8 +246,6 @@ async function checkIntegrity(_db: AppDatabase) {
 
     if (errors > 0) {
         console.error(`[Integrity] Found ${errors} corrupted documents in sample.`);
-    } else {
-        // console.log('[Integrity] Sample check passed.');
     }
 }
 
@@ -278,22 +278,36 @@ async function setupReplication(db: AppDatabase) {
                 batchSize: 5
             },
             pull: {
-                // heartbeat: 60000 // Not supported
+                batchSize: 5
             },
             live: true,
             retryTime: 5000
         });
 
-        // Optional: replicate system health too
         const hState = await replicateServer({
             collection: db.system_health,
             url: `${BASE_URL}/system_health/0`,
             replicationIdentifier: 'health-replication-v1',
-            headers: { Authorization: authToken ? `Bearer ${authToken}` : '' },
-            live: true
+            push: {
+                batchSize: 5
+            },
+            pull: {
+                batchSize: 5
+            },
+            live: true,
+            retryTime: 5000
         });
 
         activeReplications.push(tState, hState);
+
+        tState.error$.subscribe((err: any) => {
+            console.error('[Worker] Telemetry Replication Error:', err);
+        });
+
+        hState.error$.subscribe((err: any) => {
+            console.error('[Worker] Health Replication Error:', err);
+        });
+
 
     } catch (err) {
         console.error('[Worker] Replication failed:', err);
@@ -306,4 +320,4 @@ setInterval(async () => {
     if (db) {
         await cleanupSyncedLogs(db);
     }
-}, 60000); // Run every minute
+}, 60000);

@@ -70,9 +70,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
             collection: collection,
             replicationIdentifier: `${name}-replication-v0`,
             url: `${BASE_URL}/${name}/0`,
-            headers: {
-                Authorization: activeToken ? `Bearer ${activeToken}` : ''
-            },
             push: {
                 batchSize: 5
             },
@@ -144,7 +141,6 @@ export async function setReplicationAuth(token: string | null) {
     activeToken = token;
 
     if (activeReplications && activeDb) {
-        console.log('[Replication] Restarting with new token...');
         await stopReplications();
         await startReplications(activeDb);
     }

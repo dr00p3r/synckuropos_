@@ -67,11 +67,10 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         // Log Encryption Status
         // Checking storage parameters or assuming based on configuration
         // Since we wrap with keyCompression only, not encryption yet:    
-        logMetric(TelemetryEvents.DB_ENCRYPTION_STATUS, { isEncrypted: false });
+        //logMetric(TelemetryEvents.DB_ENCRYPTION_STATUS, { isEncrypted: false });
 
         // Init replications
         await startReplications(dbInstance);
-        console.log('✅ Replicaciones iniciadas correctamente');
 
       } catch (error) {
         console.error('❌ Error inicializando la base de datos:', error);

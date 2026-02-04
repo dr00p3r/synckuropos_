@@ -40,7 +40,7 @@ let dbPromise: Promise<AppDatabase> | null = null;
 
 const createDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuroposdb',
+        name: 'synckuroposdb-3',
         storage: storage,     // Use the stable reference
         multiInstance: false, // Main thread usually locks the DB
         eventReduce: true,

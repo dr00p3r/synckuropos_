@@ -21,11 +21,8 @@ export const useTelemetry = () => {
 
         // Initialize Singleton Worker on window
         if (!window.__TELEMETRY_WORKER__) {
-            console.log('[Telemetry] Initializing worker (Window Singleton)...');
             window.__TELEMETRY_WORKER__ = new TelemetryWorker();
             window.__TELEMETRY_WORKER__.postMessage({ type: 'INIT' });
-        } else {
-            // console.log('[Telemetry] Reusing existing worker');
         }
 
         const worker = window.__TELEMETRY_WORKER__;
@@ -84,6 +81,8 @@ export const useTelemetry = () => {
                 type: 'LOG_METRIC',
                 payload: { type, data }
             });
+        } else {
+            console.error('[useTelemetry] Worker not initialized');
         }
     };
 

@@ -40,6 +40,7 @@ export const useProductSearch = () => {
             }).exec();
 
             const durationMs = performance.now() - startTime;
+            
             logMetric(TelemetryEvents.PERF_SEARCH_LATENCY, {
                 durationMs,
                 resultCount: results.length

@@ -5,54 +5,106 @@ import { RxServerAdapterExpress } from 'rxdb-server/plugins/adapter-express';
 import { createServerDatabase } from './db.ts';
 import express from 'express';
 import cors from 'cors';
+import { getSonarMetrics } from './services/sonarService.ts';
+import { runLighthouseAudit, measureMemoryUsage } from './scripts/auditRunner.ts';
 
 const PORT = process.env.PORT;
-const CORS_ORIGIN = process.env.CORS_ORIGIN;
 
 const run = async () => {
   const myRxDatabase = await createServerDatabase();
 
   const app = express();
 
-  // Custom Middleware Setup
+  // 1. CORS must come first
+  const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
   app.use(cors({
-    origin: CORS_ORIGIN
+    origin: allowedOrigin,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
-  // Middleware for Authentication
-  app.use(async (req: any, res: any, next: any) => {
-    const protectedPaths = [
-      '/telemetry',
-      '/system_health',
-      '/products',
-      '/users',
-      '/customers',
-      '/supplyings',
-      '/comboProducts',
-      '/debts',
-      '/debtPayments',
-      '/sales',
-      '/saleDetails'
-    ];
-    const isProtected = protectedPaths.some(path => req.path.includes(path));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-    if (isProtected) {
-      if (req.method === 'OPTIONS') return next();
-
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.warn(`[Auth] Unauthorized access attempt to ${req.path}`);
-        return res.status(401).json({ error: 'Unauthorized', message: 'Missing or invalid token' });
-      }
-    }
-    next();
-  });
-
+  // 4. Create RxDB server with the configured app
   const server = await createRxServer({
     database: myRxDatabase,
     adapter: RxServerAdapterExpress,
     serverApp: app,
+    cors: allowedOrigin,
     port: Number(PORT)
+  });
+
+  // Endpoints Custom
+  app.get('/api/telemetry', async (req, res) => {
+    try {
+      const telemetryCollection = myRxDatabase.collections.telemetry;
+      if (!telemetryCollection) {
+        return res.status(500).json({ error: 'Telemetry collection not found' });
+      }
+      const logs = await telemetryCollection.find().exec();
+      // Return raw documents
+      const result = logs.map(doc => doc.toJSON());
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+
+
+  let isAuditRunning = false;
+  let isMemoryMeasuring = false;
+
+  app.post('/api/run-audit', async (req, res) => {
+    if (isAuditRunning) {
+      return res.status(429).json({ error: "Audit already in progress" });
+    }
+    isAuditRunning = true;
+    try {
+      console.log("Triggering Lighthouse Audit...");
+      const metrics = await runLighthouseAudit();
+      res.json({
+        ...metrics,
+        memory: 0, // Memory is measured separately
+        vulnerabilities: 0
+      });
+    } catch (e: any) {
+      console.error("Lighthouse Audit Error:", e);
+      res.status(500).json({ error: e.message });
+    } finally {
+      isAuditRunning = false;
+    }
+  });
+
+  app.post('/api/measure-memory', async (req, res) => {
+    if (isMemoryMeasuring) {
+      return res.status(429).json({ error: "Memory measurement already in progress" });
+    }
+    isMemoryMeasuring = true;
+    try {
+      console.log("Measuring memory usage...");
+      const memory = await measureMemoryUsage();
+      res.json({ memory });
+    } catch (e: any) {
+      console.error("Memory Measurement Error:", e);
+      res.status(500).json({ error: e.message, memory: 0 });
+    } finally {
+      isMemoryMeasuring = false;
+    }
+  });
+
+  app.get('/api/sonar-metrics', async (req, res) => {
+    try {
+      const metrics = await getSonarMetrics();
+      res.json(metrics);
+    } catch (e: any) {
+      console.error("Error fetching SonarQube metrics (returning empty):", e.message);
+      // Return empty object so frontend shows "-"
+      res.json({});
+    }
   });
 
   const productsCollection = myRxDatabase.collections.products;

@@ -7,8 +7,20 @@ export interface MenuItem {
 }
 
 export const MENU_ITEMS: MenuItem[] = [
-    { id: 'venta', label: 'Venta', icon: 'pi pi-shopping-cart', path: '/', roles: ['admin', 'cajero'] },
-    { id: 'inventario', label: 'Inventario', icon: 'pi pi-box', path: '/inventory', roles: ['admin'] },
+    {
+        id: 'dashboard',
+        label: 'Dashboard',
+        icon: 'pi pi-chart-bar',
+        path: '/dashboard',
+        roles: ['admin', 'manager']
+    },
+    {
+        id: 'sales',
+        label: 'Venta',
+        icon: 'pi pi-shopping-cart',
+        path: '/',
+        roles: ['admin', 'cajero', 'manager']
+    }, { id: 'inventario', label: 'Inventario', icon: 'pi pi-box', path: '/inventory', roles: ['admin'] },
     { id: 'clientes', label: 'Clientes', icon: 'pi pi-users', path: '/customers', roles: ['admin'] },
     { id: 'reportes', label: 'Reportes', icon: 'pi pi-chart-bar', path: '/reports', roles: ['admin'] },
 ];

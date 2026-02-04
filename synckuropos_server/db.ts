@@ -25,7 +25,7 @@ addRxPlugin(RxDBUpdatePlugin);
 
 export const createServerDatabase = async (): Promise<RxDatabase> => {
   const db = await createRxDatabase({
-    name: 'synckuroposdb-server',
+    name: 'synckuroposdb-server-3',
     storage: wrappedValidateAjvStorage({
       storage: wrappedKeyCompressionStorage({
         storage: getRxStorageMongoDB({

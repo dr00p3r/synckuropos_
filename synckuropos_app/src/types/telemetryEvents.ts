@@ -22,5 +22,6 @@ export const TelemetryEvents = {
     // Task Metrics
     TASK_INIT: 'TASK_INIT',
     TASK_COMPLETION: 'TASK_COMPLETION',
-    TASK_DURATION: 'TASK_DURATION'
+    TASK_DURATION: 'TASK_DURATION',
+    APP_START: 'APP_START'
 } as const;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog } from 'primereact/dialog';
+import { ConfirmDialog } from 'primereact/confirmdialog';
 import { TabView, TabPanel } from 'primereact/tabview';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -21,7 +22,7 @@ const evaluateExpression = (expr: string): number | null => {
         const cleaned = expr.replace(/\s/g, '');
 
         // Validar que solo contenga números, operadores y paréntesis permitidos
-        if (!/^[0-9+\-*/.()]+$ /.test(cleaned)) {
+        if (!/^[0-9+\-*/.()]+$/.test(cleaned)) {
             return null;
         }
 
@@ -180,6 +181,7 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
             onHide={onHide}
             maximizable
         >
+            <ConfirmDialog />
             <div className="pt-2">
                 <TabView
                     activeIndex={activeIndex}
