@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import type { AppDatabase } from '@/hooks';
 import type { Product, User, Customer } from '../types/types';
+import { DEMO_CONFIG } from '@/config/demoCredentials';
 
 // Datos de productos de ejemplo para pruebas
 const sampleProducts: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
@@ -181,9 +182,7 @@ export const initializeSampleData = async (db: AppDatabase) => {
 
     if (existingUsers.length === 0) {
       // Insertar usuarios de ejemplo con contraseñas hasheadas
-      const saltRounds = 10;
-      const defaultPassword = '123456'; // Contraseña por defecto para pruebas
-      const passwordHash = await bcrypt.hash(defaultPassword, saltRounds);
+      const passwordHash = await bcrypt.hash(DEMO_CONFIG.DEFAULT_PASSWORD, DEMO_CONFIG.SALT_ROUNDS);
 
       const usersToInsert = sampleUsers.map(user => ({
         ...user,
@@ -194,9 +193,7 @@ export const initializeSampleData = async (db: AppDatabase) => {
 
       await db.collections.users.bulkInsert(usersToInsert);
       console.log('✅ Usuarios de ejemplo insertados correctamente:', usersToInsert.length);
-      console.log('🔑 Credenciales por defecto:');
-      console.log('   👨‍💼 Admin - Usuario: admin, Contraseña: 123456');
-      console.log('   👨‍💻 Cajero - Usuario: cajero, Contraseña: 123456');
+      console.log('🔑 Credenciales de demo configuradas para usuarios de prueba');
     } else {
       console.log('Los usuarios de ejemplo ya existen en la base de datos');
     }
