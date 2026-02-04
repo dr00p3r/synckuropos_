@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks';
-import { useToast } from '@/hooks';
+import { useAuth , useToast } from '@/hooks';
+import { getDemoCredentials, DEMO_CONFIG } from '@/config/demoCredentials';
 import type { LoginCredentials } from '../types';
 import './LoginScreen.css';
 
@@ -50,12 +50,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   const handleDemoLogin = async (role: 'admin' | 'cajero') => {
-    const demoCredentials = {
-      admin: { username: 'admin', password: '123456' },
-      cajero: { username: 'cajero', password: '123456' }
-    };
-
-    const { username, password } = demoCredentials[role];
+    const { username, password } = getDemoCredentials(role);
     setCredentials({ username, password });
     
     setIsSubmitting(true);
@@ -143,9 +138,9 @@ export const LoginScreen: React.FC = () => {
               onClick={() => handleDemoLogin('admin')}
               disabled={isLoading || isSubmitting}
             >
-              <span>👨‍💼 Acceder como Admin</span>
+              <span>{DEMO_CONFIG.ACCOUNTS.admin.label}</span>
               <small className="text-xs font-normal opacity-80">
-                Usuario: admin | Contraseña: 123456
+                Usuario: {DEMO_CONFIG.ACCOUNTS.admin.username} | Contraseña: {DEMO_CONFIG.DEFAULT_PASSWORD}
               </small>
             </button>
             
@@ -155,9 +150,9 @@ export const LoginScreen: React.FC = () => {
               onClick={() => handleDemoLogin('cajero')}
               disabled={isLoading || isSubmitting}
             >
-              <span>👨‍💻 Acceder como Cajero</span>
+              <span>{DEMO_CONFIG.ACCOUNTS.cajero.label}</span>
               <small className="text-xs font-normal opacity-80">
-                Usuario: cajero | Contraseña: 123456
+                Usuario: {DEMO_CONFIG.ACCOUNTS.cajero.username} | Contraseña: {DEMO_CONFIG.DEFAULT_PASSWORD}
               </small>
             </button>
           </div>
