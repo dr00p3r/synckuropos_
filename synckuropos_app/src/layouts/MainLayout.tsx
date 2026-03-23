@@ -73,7 +73,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             {/* 1. CONTENIDO PRINCIPAL */}
             <div
                 className="flex-1 flex flex-column min-h-0"
-                style={{ marginRight: 'var(--sidebar-width)' }}
+                style={{ marginRight: 'var(--sidebar-width)', transition: 'margin-right 0.3s ease' }}
             >
                 {/* Topbar Móvil */}
                 <div className="md:hidden flex align-items-center justify-content-between p-3 bg-white shadow-1 flex-shrink-0">

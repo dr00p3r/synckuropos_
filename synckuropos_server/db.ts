@@ -3,17 +3,17 @@ import type { RxDatabase } from 'rxdb';
 
 import { getRxStorageMongoDB } from 'rxdb/plugins/storage-mongodb';
 
-import { productSchema } from '../synckuropos_schemas/product.schema.ts';
-import { customerSchema } from '../synckuropos_schemas/customer.schema.ts';
-import { supplyingSchema } from '../synckuropos_schemas/supplying.schema.ts';
-import { comboProductSchema } from '../synckuropos_schemas/comboProduct.schema.ts';
-import { debtSchema } from '../synckuropos_schemas/debt.schema.ts';
-import { debtPaymentSchema } from '../synckuropos_schemas/debtPayment.schema.ts';
-import { saleSchema } from '../synckuropos_schemas/sale.schema.ts';
-import { saleDetailSchema } from '../synckuropos_schemas/saleDetail.schema.ts';
-import { userSchema } from '../synckuropos_schemas/user.schema.ts';
-import { telemetrySchema } from '../synckuropos_schemas/telemetry.schema.ts';
-import { systemHealthSchema } from '../synckuropos_schemas/systemHealth.schema.ts';
+import { productSchema } from '../synckuropos_schemas/product.schema.js';
+import { customerSchema } from '../synckuropos_schemas/customer.schema.js';
+import { supplyingSchema } from '../synckuropos_schemas/supplying.schema.js';
+import { comboProductSchema } from '../synckuropos_schemas/comboProduct.schema.js';
+import { debtSchema } from '../synckuropos_schemas/debt.schema.js';
+import { debtPaymentSchema } from '../synckuropos_schemas/debtPayment.schema.js';
+import { saleSchema } from '../synckuropos_schemas/sale.schema.js';
+import { saleDetailSchema } from '../synckuropos_schemas/saleDetail.schema.js';
+import { userSchema } from '../synckuropos_schemas/user.schema.js';
+import { telemetrySchema } from '../synckuropos_schemas/telemetry.schema.js';
+import { systemHealthSchema } from '../synckuropos_schemas/systemHealth.schema.js';
 
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';

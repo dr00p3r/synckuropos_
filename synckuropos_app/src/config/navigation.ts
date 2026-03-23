@@ -8,13 +8,6 @@ export interface MenuItem {
 
 export const MENU_ITEMS: MenuItem[] = [
     {
-        id: 'dashboard',
-        label: 'Dashboard',
-        icon: 'pi pi-chart-bar',
-        path: '/dashboard',
-        roles: ['admin', 'manager']
-    },
-    {
         id: 'sales',
         label: 'Venta',
         icon: 'pi pi-shopping-cart',

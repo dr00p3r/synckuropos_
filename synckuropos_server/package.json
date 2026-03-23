@@ -13,6 +13,9 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsx server.ts",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "start": "node dist/synckuropos_server/server.js",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",

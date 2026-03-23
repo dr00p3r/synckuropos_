@@ -1,5 +1,4 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   collectCoverage: true,
   coverageDirectory: 'coverage',
@@ -28,12 +27,14 @@ module.exports = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^uuid$': '<rootDir>/src/__mocks__/uuid.ts',
+    '^.+\\?worker$': '<rootDir>/src/__mocks__/workerMock.ts',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^../db/replication$': '<rootDir>/src/__mocks__/replication.ts',
+    '^../workers/telemetry.worker\\?worker$': '<rootDir>/src/__mocks__/workerMock.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.jest.json',
-    }],
+    '^.+\\.(ts|tsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(uuid)/)',

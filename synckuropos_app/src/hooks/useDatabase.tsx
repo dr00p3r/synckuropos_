@@ -7,8 +7,6 @@ import {
 
 import { startReplications } from '../db/replication';
 import { getDb } from '../db';
-import { useTelemetry } from './useTelemetry';
-import { TelemetryEvents } from '../types/telemetryEvents';
 
 import type { FC, ReactNode } from 'react';
 import type { RxDatabase, RxCollection } from 'rxdb';
@@ -51,7 +49,6 @@ interface DatabaseProviderProps {
 
 export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
   const [db, setDb] = useState<AppDatabase | null>(null);
-  const { logMetric } = useTelemetry();
 
   useEffect(() => {
     const initDb = async () => {
@@ -62,7 +59,7 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         // Init sample data
         const { initializeSampleData } = await import('../utils/sampleData');
         await initializeSampleData(dbInstance);
-        console.log('✅ Base de datos inicializada correctamente');
+        console.log('Base de datos inicializada correctamente');
 
         // Log Encryption Status
         // Checking storage parameters or assuming based on configuration
@@ -73,7 +70,7 @@ export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
         await startReplications(dbInstance);
 
       } catch (error) {
-        console.error('❌ Error inicializando la base de datos:', error);
+        console.error('Error inicializando la base de datos:', error);
       }
     };
 

@@ -2,16 +2,19 @@ import * as React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useToast, ToastProvider } from '../useToast';
 
-// Mock PrimeReact Toast
-jest.mock('primereact/toast', () => ({
-  Toast: React.forwardRef((_props: unknown, ref: React.Ref<{ show: jest.Mock; clear: jest.Mock }>) => {
-    React.useImperativeHandle(ref, () => ({
-      show: jest.fn(),
-      clear: jest.fn(),
-    }));
-    return null;
-  }),
-}));
+// Mock PrimeReact Toast - use require inside mock factory to avoid out-of-scope variable error
+jest.mock('primereact/toast', () => {
+  const ReactMock = require('react');
+  return {
+    Toast: ReactMock.forwardRef((_props: unknown, ref: unknown) => {
+      ReactMock.useImperativeHandle(ref, () => ({
+        show: jest.fn(),
+        clear: jest.fn(),
+      }));
+      return null;
+    }),
+  };
+});
 
 describe('useToast', () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -61,7 +64,7 @@ describe('useToast', () => {
 
   it('should call showSuccess without throwing', () => {
     const { result } = renderHook(() => useToast(), { wrapper });
-    
+
     expect(() => {
       act(() => {
         result.current.showSuccess('Test', 'Detail');
@@ -71,7 +74,7 @@ describe('useToast', () => {
 
   it('should call showError without throwing', () => {
     const { result } = renderHook(() => useToast(), { wrapper });
-    
+
     expect(() => {
       act(() => {
         result.current.showError('Error', 'Detail');
@@ -81,7 +84,7 @@ describe('useToast', () => {
 
   it('should call showInfo without throwing', () => {
     const { result } = renderHook(() => useToast(), { wrapper });
-    
+
     expect(() => {
       act(() => {
         result.current.showInfo('Info', 'Detail');
@@ -91,7 +94,7 @@ describe('useToast', () => {
 
   it('should call showWarn without throwing', () => {
     const { result } = renderHook(() => useToast(), { wrapper });
-    
+
     expect(() => {
       act(() => {
         result.current.showWarn('Warning', 'Detail');
@@ -101,7 +104,7 @@ describe('useToast', () => {
 
   it('should call clear without throwing', () => {
     const { result } = renderHook(() => useToast(), { wrapper });
-    
+
     expect(() => {
       act(() => {
         result.current.clear();

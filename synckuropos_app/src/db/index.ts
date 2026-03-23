@@ -4,8 +4,6 @@ import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
-import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
-
 // Schemas
 import { productSchema } from '../../../synckuropos_schemas/product.schema.ts';
 import { customerSchema } from '../../../synckuropos_schemas/customer.schema.ts';
@@ -24,7 +22,6 @@ import type { AppDatabase } from '@/hooks';
 // Register Plugins
 addRxPlugin(RxDBQueryBuilderPlugin);
 addRxPlugin(RxDBUpdatePlugin);
-addRxPlugin(RxDBDevModePlugin);
 
 /**
  * 1. DEFINE STORAGE GLOBALLY
@@ -40,11 +37,11 @@ let dbPromise: Promise<AppDatabase> | null = null;
 
 const createDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuroposdb-3',
+        name: 'synckuroposdb-30',
         storage: storage,     // Use the stable reference
+        password: import.meta.env.VITE_DB_PASSWORD,
         multiInstance: false, // Main thread usually locks the DB
         eventReduce: true,
-        ignoreDuplicate: true // Essential for HMR/Dev mode to avoid DB9 errors
     });
 
     /**

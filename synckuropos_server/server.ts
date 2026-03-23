@@ -2,11 +2,11 @@
 import 'dotenv/config';
 import { createRxServer } from 'rxdb-server/plugins/server';
 import { RxServerAdapterExpress } from 'rxdb-server/plugins/adapter-express';
-import { createServerDatabase } from './db.ts';
+import { createServerDatabase } from './db.js';
 import express from 'express';
 import cors from 'cors';
-import { getSonarMetrics } from './services/sonarService.ts';
-import { runLighthouseAudit, measureMemoryUsage } from './scripts/auditRunner.ts';
+import { getSonarMetrics } from './services/sonarService.js';
+import { runLighthouseAudit, measureMemoryUsage } from './scripts/auditRunner.js';
 
 const PORT = process.env.PORT;
 

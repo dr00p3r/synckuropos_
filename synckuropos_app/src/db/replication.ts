@@ -56,7 +56,7 @@ const monitorNetwork = () => {
 };
 
 
-const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
+const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL;
 
 export async function startReplications(db: AppDatabase): Promise<Replications> {
     if (activeReplications) {
@@ -89,7 +89,7 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
                 if (startTime > 0) {
                     const durationMs = performance.now() - startTime;
                     // Only log significant syncs (e.g. > 30ms) to avoid noise
-                    if (durationMs > 30) {
+                    if (durationMs > 10) {
                         logEvent(TelemetryEvents.SYNC_PERFORMANCE, {
                             durationMs,
                             collection: name
@@ -124,7 +124,6 @@ export async function startReplications(db: AppDatabase): Promise<Replications> 
         saleDetails: await startRep<SaleDetail>('saleDetails', db.collections.saleDetails),
     };
 
-    console.log('[Replication] Started for all collections');
     return activeReplications;
 }
 

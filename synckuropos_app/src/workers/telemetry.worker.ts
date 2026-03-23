@@ -30,15 +30,13 @@ let dbPromise: Promise<AppDatabase> | null = null;
 
 const createWorkerDb = async (): Promise<AppDatabase> => {
     const db = await createRxDatabase({
-        name: 'synckuropos-telemetry-2',
+        name: 'synckuropos-telemetry-30',
         storage: storage,
         multiInstance: true,
         eventReduce: true,
-        ignoreDuplicate: true
     });
 
     // Only add collections if they don't exist yet
-    // (RxDB handles this internally, but safe to call)
     if (!db.collections.telemetry) {
         await db.addCollections({
             telemetry: { schema: telemetrySchema },
@@ -159,7 +157,7 @@ async function handleHeartbeat(db: AppDatabase, payload: { timestamp: number }) 
 }
 // Batching Configuration
 const BATCH_SIZE = 50;
-const FLUSH_INTERVAL = 5000;
+const FLUSH_INTERVAL = 2000;
 let logBuffer: any[] = [];
 let flushTimeout: any = null;
 
@@ -201,10 +199,11 @@ async function flushBuffer(db: AppDatabase) {
     }
 
     try {
-        console.log('[Telemetry] Flushing batch:', batch);
         await db.telemetry.bulkInsert(batch);
     } catch (error) {
-        console.error('[Telemetry] Failed to flush logs:', error);
+        console.error('[Telemetry] Failed to flush logs, re-queuing:', error);
+        // Re-encolar el batch fallido al frente del buffer para no perder datos
+        logBuffer = [...batch, ...logBuffer];
     }
 }
 
@@ -250,9 +249,25 @@ async function checkIntegrity(_db: AppDatabase) {
 }
 
 async function cleanupSyncedLogs(db: AppDatabase) {
-    const result = await db.telemetry.find().where('isSynced').eq(true).remove();
-    if (result.length > 0) {
-        console.log(`[Cleanup] Removed ${result.length} synced logs.`);
+    try {
+        const totalCount = await db.telemetry.count().exec();
+        if (totalCount > 5000) {
+            console.warn(`[Telemetry] Local DB tiene ${totalCount} logs. Verificar estado de replicación.`);
+            // Solo limpiar logs muy antiguos (>30 días) si la BD crece demasiado
+            if (totalCount > 10000) {
+                const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                const oldDocs = await db.telemetry.find({
+                    selector: { timestamp: { $lt: thirtyDaysAgo } },
+                    limit: 500
+                }).exec();
+                if (oldDocs.length > 0) {
+                    await Promise.all(oldDocs.map(doc => doc.remove()));
+                    console.warn(`[Cleanup] Eliminados ${oldDocs.length} logs antiguos (>30 días). Total era: ${totalCount}`);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[Cleanup] Error durante limpieza:', e);
     }
 }
 
@@ -262,11 +277,16 @@ let activeReplications: any[] = [];
 // Use env var or fallback
 const BASE_URL = import.meta.env.VITE_SYNC_SERVER_URL ?? 'https://express-test.dr00p3r.top';
 
+let replicationRetryCount = 0;
+const MAX_REPLICATION_RETRIES = 5;
+
 async function setupReplication(db: AppDatabase) {
     if (activeReplications.length > 0) return;
 
+    // Flush pending logs antes de iniciar replicación
+    await flushBuffer(db);
+
     try {
-        console.log('[Worker] Starting replication to', BASE_URL);
         const tState = await replicateServer({
             collection: db.telemetry,
             url: `${BASE_URL}/telemetry/0`,
@@ -275,13 +295,13 @@ async function setupReplication(db: AppDatabase) {
                 Authorization: authToken ? `Bearer ${authToken}` : ''
             },
             push: {
-                batchSize: 5
+                batchSize: 10
             },
             pull: {
-                batchSize: 5
+                batchSize: 10
             },
             live: true,
-            retryTime: 5000
+            retryTime: 3000
         });
 
         const hState = await replicateServer({
@@ -289,35 +309,82 @@ async function setupReplication(db: AppDatabase) {
             url: `${BASE_URL}/system_health/0`,
             replicationIdentifier: 'health-replication-v1',
             push: {
-                batchSize: 5
+                batchSize: 10
             },
             pull: {
-                batchSize: 5
+                batchSize: 10
             },
             live: true,
-            retryTime: 5000
+            retryTime: 3000
         });
 
         activeReplications.push(tState, hState);
+        replicationRetryCount = 0;
 
+        // Monitor errores de replicación con auto-restart
+        let consecutiveErrors = 0;
         tState.error$.subscribe((err: any) => {
-            console.error('[Worker] Telemetry Replication Error:', err);
+            consecutiveErrors++;
+            console.error(`[Worker] Telemetry Replication Error (${consecutiveErrors}):`, err.message || err);
+            if (consecutiveErrors >= 10) {
+                console.warn('[Worker] Demasiados errores consecutivos, reiniciando replicación...');
+                consecutiveErrors = 0;
+                restartReplication(db);
+            }
+        });
+
+        // Resetear contador cuando la sync completa un ciclo exitoso
+        tState.active$.subscribe((active) => {
+            if (!active && consecutiveErrors > 0) {
+                consecutiveErrors = 0;
+            }
         });
 
         hState.error$.subscribe((err: any) => {
-            console.error('[Worker] Health Replication Error:', err);
+            console.error('[Worker] Health Replication Error:', err.message || err);
         });
 
+        console.log('[Worker] Replicación iniciada correctamente');
 
     } catch (err) {
-        console.error('[Worker] Replication failed:', err);
+        console.error('[Worker] Replication setup failed:', err);
+        replicationRetryCount++;
+        if (replicationRetryCount <= MAX_REPLICATION_RETRIES) {
+            const delay = Math.min(5000 * Math.pow(2, replicationRetryCount - 1), 30000);
+            console.log(`[Worker] Reintentando replicación en ${delay}ms (intento ${replicationRetryCount}/${MAX_REPLICATION_RETRIES})`);
+            setTimeout(() => setupReplication(db), delay);
+        } else {
+            console.error('[Worker] Máximo de reintentos alcanzado. Replicación no iniciada.');
+        }
     }
 }
 
-// Periodically run cleanup
+async function restartReplication(db: AppDatabase) {
+    try {
+        await Promise.all(activeReplications.map(r => r.cancel()));
+    } catch (e) {
+        console.error('[Worker] Error cancelando replicaciones:', e);
+    }
+    activeReplications = [];
+    replicationRetryCount = 0;
+    await setupReplication(db);
+}
+
+// Health check periódico: flush buffer, verificar replicación, monitorear logs
 setInterval(async () => {
     const db = await getDb();
     if (db) {
+        // Siempre hacer flush del buffer para asegurar persistencia local
+        await flushBuffer(db);
+
+        // Si no hay replicaciones activas, reintentar
+        if (activeReplications.length === 0) {
+            console.warn('[Worker] Sin replicaciones activas, reintentando...');
+            replicationRetryCount = 0;
+            await setupReplication(db);
+        }
+
+        // Monitorear cantidad de logs locales
         await cleanupSyncedLogs(db);
     }
-}, 60000);
+}, 120000); // Cada 2 minutos

@@ -11,7 +11,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "test": "jest --coverage",
-    "sonar": "sonar-scanner"
+    "sonar": "sonar-scanner",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -34,6 +35,10 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
     "@eslint/js": "^9.38.0",
     "@tauri-apps/cli": "^2.8.4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -43,6 +48,8 @@
     "@types/react-dom": "^18.3.0",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "babel-jest": "^30.2.0",
+    "babel-plugin-transform-vite-meta-env": "^1.0.3",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",

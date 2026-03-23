@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, createContext } from 'react';
+import { useState, useEffect, useContext, createContext } from 'react';
 import bcrypt from 'bcryptjs';
 import { useDatabase } from './useDatabase';
 import { setReplicationAuth } from '../db/replication';

@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
-import { useAuth , useToast } from '@/hooks';
-import { getDemoCredentials, DEMO_CONFIG } from '@/config/demoCredentials';
+import React, { useState, useRef, useCallback } from 'react';
+import { useAuth, useToast } from '@/hooks';
 import type { LoginCredentials } from '../types';
-import './LoginScreen.css';
+import { Card } from 'primereact/card';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { Password } from 'primereact/password';
+import { Message } from 'primereact/message';
+
+// Configuración del rate limiter
+const MAX_ATTEMPTS = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
+
+interface AttemptRecord {
+  count: number;
+  firstAttemptTime: number;
+}
 
 export const LoginScreen: React.FC = () => {
   const { login, isLoading } = useAuth();
@@ -13,6 +25,41 @@ export const LoginScreen: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Rate limiting state
+  const attemptRecordRef = useRef<AttemptRecord>({ count: 0, firstAttemptTime: 0 });
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
+
+  const checkRateLimit = useCallback((): boolean => {
+    const now = Date.now();
+    const record = attemptRecordRef.current;
+
+    // Si ha pasado más de 1 minuto desde el primer intento, reiniciar el contador
+    if (now - record.firstAttemptTime > RATE_LIMIT_WINDOW_MS) {
+      attemptRecordRef.current = { count: 1, firstAttemptTime: now };
+      return true;
+    }
+
+    // Si aún estamos en la ventana de tiempo
+    if (record.count >= MAX_ATTEMPTS) {
+      const timeLeft = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - record.firstAttemptTime)) / 1000);
+      setRemainingTime(timeLeft);
+      setIsRateLimited(true);
+
+      // Programar la desactivación del rate limit
+      setTimeout(() => {
+        setIsRateLimited(false);
+        attemptRecordRef.current = { count: 0, firstAttemptTime: 0 };
+      }, timeLeft * 1000);
+
+      return false;
+    }
+
+    // Incrementar el contador
+    attemptRecordRef.current.count += 1;
+    return true;
+  }, []);
+
   const handleInputChange = (field: 'username' | 'password', value: string) => {
     setCredentials(prev => ({
       ...prev,
@@ -22,7 +69,13 @@ export const LoginScreen: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Verificar rate limit
+    if (!checkRateLimit()) {
+      showError(`Demasiados intentos. Espera ${remainingTime} segundos.`);
+      return;
+    }
+
     // Validaciones básicas
     if (!credentials.username.trim()) {
       showWarn('Por favor ingresa tu nombre de usuario');
@@ -49,115 +102,91 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (role: 'admin' | 'cajero') => {
-    const { username, password } = getDemoCredentials(role);
-    setCredentials({ username, password });
-    
-    setIsSubmitting(true);
-    try {
-      await login(username, password);
-    } catch (error) {
-      showError('Error al acceder con credenciales de demostración');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const cardHeader = (
+    <div className="text-center pt-4">
+      <i className="pi pi-shopping-cart text-6xl text-primary mb-3" style={{ display: 'block' }}></i>
+      <h1 className="text-primary text-3xl font-bold m-0">SyncKuro POS</h1>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-primary-dark p-4">
-      <div className="bg-white rounded-2xl p-8 w-full max-width-md shadow-2xl animate-fadeIn">
-        <div className="text-center mb-8">
-          <h1 className="text-primary text-4xl font-bold mb-2 leading-tight">🏪 SyncKuroPOS</h1>
-          <p className="text-secondary text-base mb-4 leading-normal">Sistema de Punto de Venta Moderno</p>
-          <div className="mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border-l-4 border-primary">
-            <p className="text-primary text-sm italic m-0">
-              Bienvenido al sistema de gestión más completo para tu negocio
+    <div
+      className="min-h-screen flex align-items-center justify-content-center p-3"
+      style={{
+        background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)'
+      }}
+    >
+      <Card
+        header={cardHeader}
+        className="w-full shadow-8 border-round-xl"
+        style={{ maxWidth: '400px' }}
+      >
+        <div className="p-fluid">
+          {isRateLimited && (
+            <Message
+              severity="error"
+              text={`Demasiados intentos. Espera ${remainingTime} segundos.`}
+              className="w-full mb-4"
+            />
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="field mb-4">
+              <label htmlFor="username" className="block text-900 font-medium mb-2">
+                Usuario
+              </label>
+              <span className="p-input-icon-left w-full">
+                <i className="pi pi-user" style={{ left: '0.75rem' }} />
+                <InputText
+                  id="username"
+                  value={credentials.username}
+                  style={{ paddingLeft: '2.5rem' }}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  placeholder="Ingresa tu nombre de usuario"
+                  disabled={isLoading || isSubmitting || isRateLimited}
+                  autoComplete="username"
+                  className="w-full"
+                />
+              </span>
+            </div>
+
+            <div className="field mb-4">
+              <label htmlFor="password" className="block text-900 font-medium mb-2">
+                Contraseña
+              </label>
+              <Password
+                id="password"
+                value={credentials.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Ingresa tu contraseña"
+                disabled={isLoading || isSubmitting || isRateLimited}
+                autoComplete="current-password"
+                toggleMask
+                feedback={false}
+                className="w-full"
+                inputClassName="w-full"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              label={isLoading || isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              icon={isLoading || isSubmitting ? 'pi pi-spin pi-spinner' : 'pi pi-sign-in'}
+              loading={isLoading || isSubmitting}
+              disabled={isLoading || isSubmitting || isRateLimited}
+              className="w-full mt-3"
+              style={{ background: 'linear-gradient(135deg, #2A423E 0%, #1a2d2a 100%)', border: 'none' }}
+            />
+          </form>
+
+          <div className="text-center mt-5">
+            <p className="text-500 text-sm m-0">
+              <i className="pi pi-info-circle mr-1"></i>
+              Contacta al administrador si olvidaste tu contraseña
             </p>
           </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="mb-8 space-y-6">
-          <div className="form-field">
-            <label htmlFor="username" className="form-label">
-              Usuario
-            </label>
-            <input
-              type="text"
-              id="username"
-              className="form-input w-full"
-              value={credentials.username}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              placeholder="Ingresa tu nombre de usuario"
-              disabled={isLoading || isSubmitting}
-              required
-              autoComplete="username"
-              minLength={3}
-              maxLength={50}
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="password" className="form-label">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              className="form-input w-full"
-              value={credentials.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              placeholder="Ingresa tu contraseña"
-              disabled={isLoading || isSubmitting}
-              required
-              autoComplete="current-password"
-              minLength={6}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="btn-base btn-primary w-full"
-            disabled={isLoading || isSubmitting}
-          >
-            {(isLoading || isSubmitting) ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-primary text-lg font-semibold mb-2 text-center leading-tight">
-            Acceso de Demostración
-          </h3>
-          <p className="text-secondary text-sm text-center mb-4 leading-normal">
-            Usa estas credenciales para probar el sistema:
-          </p>
-          
-          <div className="space-y-2">
-            <button
-              type="button"
-              className="w-full p-3 border-2 border-red-600 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 rounded-lg font-semibold transition-all duration-200 text-left flex flex-col gap-1 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-              onClick={() => handleDemoLogin('admin')}
-              disabled={isLoading || isSubmitting}
-            >
-              <span>{DEMO_CONFIG.ACCOUNTS.admin.label}</span>
-              <small className="text-xs font-normal opacity-80">
-                Usuario: {DEMO_CONFIG.ACCOUNTS.admin.username} | Contraseña: {DEMO_CONFIG.DEFAULT_PASSWORD}
-              </small>
-            </button>
-            
-            <button
-              type="button"
-              className="w-full p-3 border-2 border-green-600 bg-green-50 hover:bg-green-600 hover:text-white text-green-600 rounded-lg font-semibold transition-all duration-200 text-left flex flex-col gap-1 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-              onClick={() => handleDemoLogin('cajero')}
-              disabled={isLoading || isSubmitting}
-            >
-              <span>{DEMO_CONFIG.ACCOUNTS.cajero.label}</span>
-              <small className="text-xs font-normal opacity-80">
-                Usuario: {DEMO_CONFIG.ACCOUNTS.cajero.username} | Contraseña: {DEMO_CONFIG.DEFAULT_PASSWORD}
-              </small>
-            </button>
-          </div>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 };

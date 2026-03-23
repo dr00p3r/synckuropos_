@@ -65,18 +65,8 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
         setProcessingPayment(true);
         const startTime = performance.now();
 
-        // 1. Financial Integrity Check
-        // Checking SaleItem interface: totalPrice: number. Assuming it's in cents? 
-        // Let's re-verify types. Receipt says unitPrice and totalPrice. Usually floating point if not careful.
-        // Assuming totalPrice in `SaleItem` is already total price for that line.
-        // Wait, `SaleItem` interface in types.ts: unitPrice: number, totalPrice: number.
-        // Let's assume they are handled correctly in useCart.
-        // Recalculating safely:
         const integrityTotal = saleItems.reduce((acc, item) => {
-            // Re-calculate line total to be sure: unitPrice * quantity. 
-            // BEWARE: If quantity is decimal (kg), simple math might float.
-            // Best effort integrity check:
-            return acc + item.totalPrice; // item.totalPrice is supposed to be the line total in cents
+            return acc + item.totalPrice + (item.isTaxable ? Math.round(item.totalPrice * 0.15) : 0);
         }, 0);
 
         // Wait, summary.total is in cents?

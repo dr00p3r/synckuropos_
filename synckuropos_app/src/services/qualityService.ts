@@ -2,7 +2,8 @@
 export const qualityService = {
     async getSonarMetrics(): Promise<any> {
         try {
-            const response = await fetch('http://localhost:3000/api/sonar-metrics');
+            const API_URL = import.meta.env.VITE_SYNC_SERVER_URL;
+            const response = await fetch(`${API_URL}/api/sonar-metrics`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -24,12 +25,11 @@ export const qualityService = {
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
-                const response = await fetch('http://localhost:3000/api/run-audit', { method: 'POST' });
+                const API_URL = import.meta.env.VITE_SYNC_SERVER_URL;
+                const response = await fetch(`${API_URL}/api/run-audit`, { method: 'POST' });
 
                 if (response.status === 429) {
-                    // Audit in progress - wait and retry
                     const waitTime = Math.pow(2, attempt) * 5000; // 5s, 10s, 20s
-                    console.log(`Audit in progress, retrying in ${waitTime / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
                     await delay(waitTime);
                     continue;
                 }
@@ -74,11 +74,11 @@ export const qualityService = {
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
             try {
-                const response = await fetch('http://localhost:3000/api/measure-memory', { method: 'POST' });
+                const API_URL = import.meta.env.VITE_SYNC_SERVER_URL;
+                const response = await fetch(`${API_URL}/api/measure-memory`, { method: 'POST' });
 
                 if (response.status === 429) {
                     const waitTime = Math.pow(2, attempt) * 3000;
-                    console.log(`Memory measurement in progress, retrying in ${waitTime / 1000}s...`);
                     await delay(waitTime);
                     continue;
                 }

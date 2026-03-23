@@ -1,12 +1,10 @@
 
-import React, { useState } from 'react';
-import { Card } from 'primereact/card';
+import React, { useState, useEffect } from 'react';
 import { ProgressBar } from 'primereact/progressbar';
 import { Dialog } from 'primereact/dialog';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
-import { Tag } from 'primereact/tag';
 
 interface MetricProps {
     metric: {
@@ -25,6 +23,11 @@ interface MetricProps {
 export const MetricCard: React.FC<MetricProps> = ({ metric, onUpdate }) => {
     const [showDialog, setShowDialog] = useState(false);
     const [localMetric, setLocalMetric] = useState(metric);
+
+    // Sincronizar localMetric cuando la prop cambia (nuevas métricas o umbrales aplicados)
+    useEffect(() => {
+        setLocalMetric(metric);
+    }, [metric.id, metric.umbralAceptacion, metric.umbralOptimo, metric.operador, metric.valor]);
 
     // Color Logic
     const getColor = (val: number | string, accept: number, optimal: number, op: string) => {
@@ -52,31 +55,27 @@ export const MetricCard: React.FC<MetricProps> = ({ metric, onUpdate }) => {
 
     return (
         <>
-            <div className="h-full p-1">
-                <Card
-                    className="shadow-1 cursor-pointer hover:surface-100 transition-duration-200 surface-50"
-                    pt={{ body: { className: 'p-2' }, content: { className: 'p-0' } }}
-                    onClick={() => setShowDialog(true)}
-                >
-                    <div className="flex justify-content-between align-items-center">
-                        <div className="flex flex-column" style={{ maxWidth: '65%' }}>
-                            <span className="text-sm font-semibold text-800 white-space-nowrap overflow-hidden text-overflow-ellipsis" title={metric.nombre}>{metric.nombre}</span>
-                            <span className="text-xs text-500 mt-1">{metric.operador} {metric.umbralAceptacion} {metric.unidad}</span>
-                        </div>
-                        <div className="flex flex-column align-items-end" style={{ minWidth: '35%' }}>
-                            <span className={`text-xl font-bold ${status === 'success' ? 'text-green-600' : status === 'warning' ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {typeof metric.valor === 'number' ? metric.valor.toFixed(2) : metric.valor}
-                                <span className="text-xs ml-1 text-500">{metric.unidad}</span>
-                            </span>
-                        </div>
+            <div
+                className="surface-card border-round cursor-pointer hover:surface-100 transition-duration-150"
+                style={{ padding: '0.4rem 0.6rem' }}
+                onClick={() => setShowDialog(true)}
+            >
+                <div className="flex justify-content-between align-items-center gap-2">
+                    <div className="flex flex-column" style={{ minWidth: 0, flex: 1 }}>
+                        <span className="text-xs font-semibold text-800 white-space-nowrap overflow-hidden text-overflow-ellipsis" title={metric.nombre}>{metric.nombre}</span>
+                        <span style={{ fontSize: '0.65rem' }} className="text-400 mt-1">{metric.operador} {metric.umbralAceptacion} {metric.unidad}</span>
                     </div>
-                    <ProgressBar
-                        value={percentage}
-                        showValue={false}
-                        color={status === 'success' ? '#22C55E' : status === 'warning' ? '#EAB308' : status === 'danger' ? '#EF4444' : '#6B7280'}
-                        style={{ height: '4px', marginTop: '0.5rem' }}
-                    />
-                </Card>
+                    <span className={`text-base font-bold white-space-nowrap ${status === 'success' ? 'text-green-600' : status === 'warning' ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {typeof metric.valor === 'number' ? metric.valor.toFixed(2) : metric.valor}
+                        <span style={{ fontSize: '0.6rem' }} className="ml-1 text-400">{metric.unidad}</span>
+                    </span>
+                </div>
+                <ProgressBar
+                    value={percentage}
+                    showValue={false}
+                    color={status === 'success' ? '#22C55E' : status === 'warning' ? '#EAB308' : status === 'danger' ? '#EF4444' : '#6B7280'}
+                    style={{ height: '3px', marginTop: '0.25rem' }}
+                />
             </div>
 
             <Dialog header={`Editar Umbrales: ${metric.nombre}`} visible={showDialog} style={{ width: '400px' }} onHide={() => setShowDialog(false)}>

@@ -34,7 +34,6 @@ const generateRandomProduct = (index: number): Omit<Product, 'createdAt' | 'upda
 
 export const generatePerformanceData = async (db: AppDatabase, count: number = 1000) => {
     try {
-        console.log(`Starting generation of ${count} products...`);
         const startTime = performance.now();
         const productsToInsert: any[] = [];
         const currentTime = new Date().toISOString();
@@ -47,16 +46,12 @@ export const generatePerformanceData = async (db: AppDatabase, count: number = 1
             });
         }
 
-        console.log(`Generated ${count} products. Inserting into database...`);
-
         // Bulk insert for better performance
         // RxDB bulkInsert typically returns an object with success and error results
         const result = await db.collections.products.bulkInsert(productsToInsert);
 
         const endTime = performance.now();
         const duration = (endTime - startTime).toFixed(2);
-
-        console.log(`✅ Successfully inserted ${result.success.length} products in ${duration}ms`);
 
         if (result.error.length > 0) {
             console.warn(`⚠️ Failed to insert ${result.error.length} products`);

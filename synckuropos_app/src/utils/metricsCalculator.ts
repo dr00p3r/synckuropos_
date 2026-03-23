@@ -1,4 +1,20 @@
-export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse: any = null) => {
+import type { ThresholdsMap } from '../services/thresholdService';
+
+export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse: any = null, customThresholds: ThresholdsMap = {}) => {
+
+    // Helper to apply custom thresholds if available
+    const applyThresholds = (metric: any) => {
+        const custom = customThresholds[metric.id];
+        if (custom) {
+            return {
+                ...metric,
+                umbralAceptacion: custom.umbralAceptacion,
+                umbralOptimo: custom.umbralOptimo,
+                operador: custom.operador
+            };
+        }
+        return metric;
+    };
 
     // Helper to safely get value or return "-"
     // If source is null, return "-"
@@ -15,29 +31,32 @@ export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse
     };
 
     // 1. Funcionalidad - Exactitud - Desviación de Redondeo
-    // "Total Registrado - Total Calculado" from logs
+    // Promedio absoluto de la diferencia entre total registrado y total calculado por venta
     const roundingDeviation = getVal(logs, () => {
         const saleLogs = logs.filter(l => l.type === 'FINANCIAL_INTEGRITY_CHECK');
-        let totalregistered = 0;
-        let totalCalculated = 0;
-        saleLogs.forEach(l => {
-            totalregistered += (l.data?.total || 0);
-            totalCalculated += (l.data?.calculatedTotal || 0);
-        });
-        return Math.abs(totalregistered - totalCalculated);
+        if (saleLogs.length === 0) return 0;
+        // Payload real: { diff, totalRegistered, totalCalculated }
+        const totalAbsDiff = saleLogs.reduce((acc, l) => acc + Math.abs(l.data?.diff ?? 0), 0);
+        return totalAbsDiff / saleLogs.length;
     });
 
     // 2. Fiabilidad - Disponibilidad - Tasa de Éxito Offline
+    // Mide la tasa de recuperación: cuántas veces se fue offline y volvió online exitosamente
     const offlineRate = getVal(logs, () => {
-        const offlineAttempts = logs.filter(l => l.type === 'NETWORK_STATUS_CHANGE' && l.data?.isOffline === true);
-        const offlineSuccess = offlineAttempts.filter(l => l.data?.status === 'SUCCESS');
-        return offlineAttempts.length > 0 ? (offlineSuccess.length / offlineAttempts.length) * 100 : 100;
+        // Payload real: { status: 'online'|'offline', timestamp }
+        const networkLogs = logs.filter(l => l.type === 'NETWORK_STATUS_CHANGE');
+        if (networkLogs.length === 0) return 100; // Sin cambios de red = siempre online
+        const offlineEvents = networkLogs.filter(l => l.data?.status === 'offline');
+        const onlineEvents = networkLogs.filter(l => l.data?.status === 'online');
+        if (offlineEvents.length === 0) return 100; // Nunca se fue offline
+        const recovered = Math.min(onlineEvents.length, offlineEvents.length);
+        return (recovered / offlineEvents.length) * 100;
     });
 
     // 3. Fiabilidad - Recuperabilidad - Tiempo Convergencia
     const avgConvergence = getVal(logs, () => {
         const convergenceLogs = logs.filter(l => l.type === 'SYNC_PERFORMANCE');
-        return convergenceLogs.reduce((acc, curr) => acc + (curr.data?.duration || 0), 0) / (convergenceLogs.length || 1);
+        return convergenceLogs.reduce((acc, curr) => acc + (curr.data?.durationMs / 1000 || 0), 0) / (convergenceLogs.length || 1);
     });
 
     // 4. Eficiencia - Comportamiento Temporal - TTI en Escaneo
@@ -67,29 +86,47 @@ export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse
 
     // 8. Usabilidad - Interpretabilidad - % bloqueos formulario de inventario
     const blockRate = getVal(logs, () => {
+        // Payload UX_FORM_BLOCK: { formId, errorCount, reason }
         const blockedForms = logs.filter(l => l.type === 'UX_FORM_BLOCK' && l.data?.formId === 'product-form');
+        // Payload TASK_INIT: { taskName: 'INVENTORY_UPDATE'|'INVENTORY_CREATE' }
         const totalForms = logs.filter(l => l.type === 'TASK_INIT' && (l.data?.taskName === 'INVENTORY_UPDATE' || l.data?.taskName === 'INVENTORY_CREATE'));
-        return blockedForms.length > 0 ? (blockedForms.length / totalForms.length) * 100 : 0;
+        if (totalForms.length === 0) return 0;
+        return (blockedForms.length / totalForms.length) * 100;
     });
 
     // 9. Seguridad - Fortaleza Auth - Intentos Fallidos por minuto
-    const failedLoginCount = getVal(logs, () => {
+    const failedLoginRate = getVal(logs, () => {
+        // Payload real AUTH_FAILURE: { attemptId, reason: 'invalid_password'|'error' }
+        // Cada log tiene timestamp (epoch ms) en el documento raíz
         const loginLogs = logs.filter(l => l.type === 'AUTH_FAILURE');
-        const failedLoginsPerMinute = loginLogs.reduce((acc, curr) => acc + (curr.data?.failedAttempts || 0), 0) / (loginLogs.length || 1);
-        return failedLoginsPerMinute;
+        if (loginLogs.length === 0) return 0;
+        // Calcular el rango de tiempo de TODOS los logs para obtener la ventana de observación
+        const allTimestamps = logs.map(l => l.timestamp).filter((t): t is number => typeof t === 'number' && t > 0);
+        if (allTimestamps.length < 2) return loginLogs.length; // Sin rango, retornar conteo bruto
+        const minTs = Math.min(...allTimestamps);
+        const maxTs = Math.max(...allTimestamps);
+        const rangeMinutes = (maxTs - minTs) / 60000;
+        if (rangeMinutes < 1) return loginLogs.length; // Menos de 1 min → conteo bruto
+        return loginLogs.length / rangeMinutes;
     });
 
     // 10. Seguridad - Encriptacion
+    // Payload DB_ENCRYPTION_STATUS: { isEncrypted: boolean }
+    // Nota: Este evento está comentado en useDatabase. La BD SÍ usa password (encriptación).
     const encryptionRate = getVal(logs, () => {
-        const encryptedStarts = logs.filter(l => l.type === 'DB_ENCRYPTION_STATUS' && l.data?.isEncrypted === true);
-        return encryptedStarts.length > 0 ? (encryptedStarts.length / logs.length) * 100 : 100;
+        const encryptionLogs = logs.filter(l => l.type === 'DB_ENCRYPTION_STATUS');
+        if (encryptionLogs.length === 0) return 100; // Sin checks → BD usa password = encriptada
+        const encrypted = encryptionLogs.filter(l => l.data?.isEncrypted === true);
+        return (encrypted.length / encryptionLogs.length) * 100;
     });
 
     // 11. Efectividad - Completitud Tareas Inventario
     const taskCompletionRate = getVal(logs, () => {
-        const inventoryTasks = logs.filter(l => l.type === 'TASK_INIT');
-        const completedTasks = logs.filter(l => l.type === 'TASK_COMPLETION');
-        return inventoryTasks.length > 0 ? (completedTasks.length / inventoryTasks.length) * 100 : 0;
+        // Filtrar solo tareas de inventario por taskName
+        const inventoryInits = logs.filter(l => l.type === 'TASK_INIT' && (l.data?.taskName === 'INVENTORY_UPDATE' || l.data?.taskName === 'INVENTORY_CREATE'));
+        const inventoryCompleted = logs.filter(l => l.type === 'TASK_COMPLETION' && (l.data?.taskName === 'INVENTORY_UPDATE' || l.data?.taskName === 'INVENTORY_CREATE'));
+        if (inventoryInits.length === 0) return 100; // Sin tareas iniciadas = 100% completitud
+        return (inventoryCompleted.length / inventoryInits.length) * 100;
     });
 
     // 12. Eficiencia - Tiempo en Tareas - Add Product -> Sale Complete
@@ -169,7 +206,7 @@ export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse
                 },
                 {
                     nombre: "Fortaleza Auth",
-                    metricas: [{ id: "sec_brute", nombre: "Intentos Fallidos", valor: failedLoginCount, unidad: "intentos", umbralAceptacion: 6, umbralOptimo: 0, operador: "<", fuente: "Logs" }]
+                    metricas: [{ id: "sec_brute", nombre: "Intentos Fallidos / min", valor: failedLoginRate, unidad: "int/min", umbralAceptacion: 6, umbralOptimo: 0, operador: "<", fuente: "Logs" }]
                 },
                 {
                     nombre: "Seguridad en Reposo",
@@ -231,5 +268,11 @@ export const calculateMetrics = (logs: any[] = [], sonar: any = null, lighthouse
                 }
             ]
         }
-    ];
+    ].map(factor => ({
+        ...factor,
+        criterios: factor.criterios.map(criterio => ({
+            ...criterio,
+            metricas: criterio.metricas.map(applyThresholds)
+        }))
+    }));
 };

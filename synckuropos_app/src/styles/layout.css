@@ -1,9 +1,16 @@
 :root {
-    --sidebar-width: 18rem;
+    --sidebar-width: 0;
     --sidebar-bg: #2A423E;
     --sidebar-hover: rgba(255, 255, 255, 0.1);
     --sidebar-active: rgba(84, 119, 113, 0.5);
     --text-color-sidebar: #F0EFE7;
+}
+
+/* En pantallas medianas y grandes (768px+), activar el sidebar */
+@media screen and (min-width: 768px) {
+    :root {
+        --sidebar-width: 18rem;
+    }
 }
 
 .custom-sidebar {
@@ -31,13 +38,4 @@
 .nav-item.active {
     background-color: var(--sidebar-active);
     font-weight: 600;
-}
-
-@media screen and (min-width: 768px) {
-    .md\:ml-8 {
-        margin-left: 0 !important;
-    }
-    .md\:mr-8 {
-        margin-right: var(--sidebar-width) !important;
-    }
 }

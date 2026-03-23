@@ -1,7 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginScreen } from '@/features/auth';
-import { TelemetryEvents } from '@/types/telemetryEvents';
 
 // Lazy loading de las pantallas principales
 // Nota: Como son exportaciones nombradas, usamos .then(module => ({ default: module.Componente }))
