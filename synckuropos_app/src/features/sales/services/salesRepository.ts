@@ -16,7 +16,8 @@ export const salesRepository = {
      */
     async createSaleTransaction(db: any, params: CreateSaleParams): Promise<void> {
         const { userId, saleItems, summary, receivedAmount, isCredit, customer } = params;
-        const TAX_RATE = 0.15; 
+        const TAX_RATE = 0.15;
+        const TAX_DIVISOR = 1 + TAX_RATE;
 
         // 1. Crear Cabecera de Venta
         const sale: Sale = {
@@ -36,17 +37,20 @@ export const salesRepository = {
 
         // 2. Crear Detalles
         const detailsPromises = saleItems.map(item => {
-            // Calcular impuesto solo si el producto es gravable
-            const taxAmount = item.isTaxable ? (item.totalPrice * TAX_RATE) : 0;
+            const lineTotal = Math.round(item.totalPrice);
+            const subtotal = item.isTaxable
+                ? Math.round(lineTotal / TAX_DIVISOR)
+                : lineTotal;
+            const taxAmount = item.isTaxable ? lineTotal - subtotal : 0;
             
             const saleDetail: SaleDetail = {
                 saleId: sale.saleId,
                 productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
-                subtotal: item.totalPrice,
-                taxAmount: Math.round(taxAmount),
-                lineTotal: Math.round(item.totalPrice + taxAmount),
+                subtotal,
+                taxAmount,
+                lineTotal,
                 _deleted: false
             };
             return db.saleDetails.insert(saleDetail);
@@ -54,7 +58,36 @@ export const salesRepository = {
 
         await Promise.all(detailsPromises);
 
-        // 3. Manejo de Créditos y Deudas
+        // 3. Disminuir stock por cada producto vendido
+        const stockUpdatePromises = saleItems.map(async (item) => {
+            const productDoc = await db.products.findOne({
+                selector: {
+                    productId: item.productId,
+                    _deleted: false
+                }
+            }).exec();
+
+            if (!productDoc) {
+                throw new Error(`Producto no encontrado para descontar stock: ${item.productId}`);
+            }
+
+            const currentStock = Number(productDoc.stock ?? 0);
+            if (currentStock < item.quantity) {
+                throw new Error(`Stock insuficiente para producto ${item.productId}. Stock: ${currentStock}, solicitado: ${item.quantity}`);
+            }
+
+            const newStock = currentStock - item.quantity;
+            await productDoc.update({
+                $set: {
+                    stock: newStock,
+                    updatedAt: new Date().toISOString()
+                }
+            });
+        });
+
+        await Promise.all(stockUpdatePromises);
+
+        // 4. Manejo de Créditos y Deudas
         if (isCredit && customer) {
             const totalSaleCents = Math.round(summary.total);
             const debtAmount = totalSaleCents - receivedAmount;
