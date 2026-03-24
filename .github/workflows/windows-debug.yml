@@ -21,7 +21,9 @@ jobs:
         with:
           node-version: 20 # Cambia esto si usas otra versión de Node
           cache: npm
-          cache-dependency-path: synckuropos_app/package-lock.json
+          cache-dependency-path: |
+            synckuropos_app/package-lock.json
+            synckuropos_schemas/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -34,6 +36,10 @@ jobs:
 
       - name: Install frontend dependencies
         # Si usas pnpm, cambia esto a `pnpm install`. Si usas yarn, `yarn install`
+        run: npm ci
+
+      - name: Install shared schemas dependencies
+        working-directory: synckuropos_schemas
         run: npm ci
 
       - name: Build Tauri with DevTools (Debug mode)
