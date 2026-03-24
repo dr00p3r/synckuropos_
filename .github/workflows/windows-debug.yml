@@ -1,7 +1,9 @@
 name: Build Windows Debug
 on: 
-  workflow_dispatch: # Esto permite ejecutar la acción manualmente con un botón
-
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
 jobs:
   build:
     runs-on: windows-latest
