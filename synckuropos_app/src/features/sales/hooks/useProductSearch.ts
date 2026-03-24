@@ -60,6 +60,7 @@ export const useProductSearch = () => {
                 selector: {
                     $and: [
                         { _deleted: false },
+                        { isActive: true },
                         { code: { $eq: code } } // Búsqueda exacta para escáner
                     ]
                 }
