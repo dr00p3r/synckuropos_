@@ -63,6 +63,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addToCart = async (product: Product) => {
         try {
+            const existingItem = saleItems.find(item => item.productId === product.productId);
+            const nextQuantity = (existingItem?.quantity || 0) + 1;
+
+            if (nextQuantity > product.stock) {
+                toast.showWarn(`Stock insuficiente para "${product.name}"`);
+                return;
+            }
+
             if (saleItems.length === 0) {
                 setSaleStartTime(performance.now());
             }
@@ -126,6 +134,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
+            const productDoc = await db.products.findOne({
+                selector: { productId, _deleted: false }
+            }).exec();
+
+            if (!productDoc) {
+                toast.showError('Producto no encontrado');
+                return;
+            }
+
+            const product = productDoc.toJSON() as Product;
             const combos = await productRepository.getActiveCombosByProduct(db, productId);
 
             setSaleItems(prevItems => {
@@ -135,15 +153,30 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const updatedItems = [...prevItems];
                 const item = updatedItems[index];
 
+                let finalQuantity = quantity;
+
+                if (!item.allowDecimalQuantity && finalQuantity % 1 !== 0) {
+                    finalQuantity = Math.floor(finalQuantity);
+                }
+
+                if (finalQuantity > product.stock) {
+                    toast.showWarn(`Stock insuficiente para "${item.name}"`);
+                    return prevItems;
+                }
+
+                if (finalQuantity <= 0) {
+                    return prevItems;
+                }
+
                 const { totalPrice, combosApplied } = calculatePriceWithCombos(
-                    quantity,
+                    finalQuantity,
                     item.unitPrice,
                     combos
                 );
 
                 updatedItems[index] = {
                     ...item,
-                    quantity,
+                    quantity: finalQuantity,
                     totalPrice,
                     combosApplied
                 };
