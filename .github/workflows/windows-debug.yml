@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - dev
+
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: synckuropos_app
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,6 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20 # Cambia esto si usas otra versión de Node
+          cache: npm
+          cache-dependency-path: synckuropos_app/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -23,11 +30,11 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: 'synckuropos_app/src-tauri -> target'
 
       - name: Install frontend dependencies
         # Si usas pnpm, cambia esto a `pnpm install`. Si usas yarn, `yarn install`
-        run: npm install 
+        run: npm ci
 
       - name: Build Tauri with DevTools (Debug mode)
         # El flag --debug compila la app pero DEJA LA CONSOLA ACTIVADA
@@ -40,4 +47,4 @@ jobs:
         with:
           name: windows-debug-installer
           # Subimos toda la carpeta bundle para asegurarnos de capturar el .exe o .msi
-          path: src-tauri/target/debug/bundle/
+          path: synckuropos_app/src-tauri/target/debug/bundle/
