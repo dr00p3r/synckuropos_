@@ -23,7 +23,7 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ summary, onPaymentCl
                 </div>
                 
                 <div className="flex justify-content-between mb-2">
-                    <span className="text-600">Subtotal</span>
+                    <span className="text-600">Subtotal (sin IVA)</span>
                     <span className="font-medium text-900">{formatCurrency(summary.subtotal)}</span>
                 </div>
                 

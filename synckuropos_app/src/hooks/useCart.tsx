@@ -171,14 +171,30 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const calculateSummary = (): SaleSummary => {
-        const subtotal = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const TAX_DIVISOR = 1 + TAX_RATE;
 
-        const taxableAmount = saleItems
-            .filter(item => item.isTaxable)
-            .reduce((sum, item) => sum + item.totalPrice, 0);
+        const { subtotal, tax, total } = saleItems.reduce(
+            (acc, item) => {
+                const lineTotal = Math.round(item.totalPrice);
 
-        const tax = taxableAmount * TAX_RATE;
-        const total = subtotal + tax;
+                if (!item.isTaxable) {
+                    acc.subtotal += lineTotal;
+                    acc.total += lineTotal;
+                    return acc;
+                }
+
+                // El precio de venta ya incluye IVA, aquí solo lo descomponemos.
+                const lineSubtotal = Math.round(lineTotal / TAX_DIVISOR);
+                const lineTax = lineTotal - lineSubtotal;
+
+                acc.subtotal += lineSubtotal;
+                acc.tax += lineTax;
+                acc.total += lineTotal;
+
+                return acc;
+            },
+            { subtotal: 0, tax: 0, total: 0 }
+        );
 
         return { subtotal, tax, total };
     };

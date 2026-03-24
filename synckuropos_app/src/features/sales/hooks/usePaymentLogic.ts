@@ -66,11 +66,10 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
         const startTime = performance.now();
 
         const integrityTotal = saleItems.reduce((acc, item) => {
-            return acc + item.totalPrice + (item.isTaxable ? Math.round(item.totalPrice * 0.15) : 0);
+            // El precio ya viene con IVA incluido.
+            return acc + Math.round(item.totalPrice);
         }, 0);
 
-        // Wait, summary.total is in cents?
-        // Let's allow a small epsilon if dealing with old floating point legacy, but intent is strictly integer match.
         const diff = integrityTotal - summary.total;
 
         logMetric(TelemetryEvents.FINANCIAL_INTEGRITY_CHECK, {
