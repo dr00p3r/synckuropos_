@@ -1,0 +1,41 @@
+name: Build Windows Debug
+on: 
+  workflow_dispatch: # Esto permite ejecutar la acción manualmente con un botón
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Cambia esto si usas otra versión de Node
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Esto acelera la compilación en la nube guardando en caché dependencias de Rust
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        # Si usas pnpm, cambia esto a `pnpm install`. Si usas yarn, `yarn install`
+        run: npm install 
+
+      - name: Build Tauri with DevTools (Debug mode)
+        # El flag --debug compila la app pero DEJA LA CONSOLA ACTIVADA
+        # Si usas yarn: yarn tauri build --debug
+        # Si usas pnpm: pnpm tauri build --debug
+        run: npm run tauri build -- --debug 
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-debug-installer
+          # Subimos toda la carpeta bundle para asegurarnos de capturar el .exe o .msi
+          path: src-tauri/target/debug/bundle/
