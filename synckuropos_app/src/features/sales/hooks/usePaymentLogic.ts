@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDatabase } from '../../../hooks/useDatabase';
 import { useToast, useAuth, useCart } from '@/hooks';
 import { salesRepository } from '../services/salesRepository';
+import { customerRepository } from '@/features/customers/services/customerRepository';
 import type { Customer, SaleItem, SaleSummary } from '@/types/types';
 import { useTelemetry } from '@/hooks/useTelemetry';
 import { TelemetryEvents } from '@/types/telemetryEvents';
@@ -59,6 +60,19 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
             if (!selectedCustomer.allowCredit) {
                 logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'payment-form', errorCount: 1, reason: 'credit_not_allowed' });
                 return toast.showError('Cliente sin crédito habilitado');
+            }
+
+            const currentDebt = await customerRepository.calculateCustomerDebt(db, selectedCustomer.customerId);
+            const pendingCreditAmount = Math.max(0, summary.total - receivedCents);
+            const creditLimit = selectedCustomer.creditLimit || 0;
+
+            if (pendingCreditAmount > 0 && currentDebt + pendingCreditAmount > creditLimit) {
+                logMetric(TelemetryEvents.UX_FORM_BLOCK, {
+                    formId: 'payment-form',
+                    errorCount: 1,
+                    reason: 'credit_limit_exceeded'
+                });
+                return toast.showError('Cupo de crédito insuficiente para esta venta');
             }
         }
 
