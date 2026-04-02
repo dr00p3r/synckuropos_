@@ -14,11 +14,12 @@ interface InventoryTableProps {
     loading: boolean;
     onEdit: (product: Product) => void;
     onToggleStatus: (product: Product) => void;
+    onDeleteInactive: (product: Product) => void;
     onCreate: () => void;
 }
 
 export const InventoryTable: React.FC<InventoryTableProps> = ({ 
-    products, loading, onEdit, onToggleStatus, onCreate 
+    products, loading, onEdit, onToggleStatus, onDeleteInactive, onCreate 
 }) => {
     const [globalFilter, setGlobalFilter] = useState('');
     const [showInactive, setShowInactive] = useState(false);
@@ -79,6 +80,16 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                 onClick={() => onToggleStatus(rowData)} 
                 tooltip={rowData.isActive ? "Desactivar" : "Reactivar"}
             />
+            {!rowData.isActive && (
+                <Button
+                    icon="pi pi-trash"
+                    rounded
+                    text
+                    severity="danger"
+                    onClick={() => onDeleteInactive(rowData)}
+                    tooltip="Eliminar definitivamente"
+                />
+            )}
         </div>
     );
 

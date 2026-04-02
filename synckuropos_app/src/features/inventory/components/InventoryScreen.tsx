@@ -5,7 +5,7 @@ import { useInventory } from '../hooks/useInventory';
 import type { Product } from '@/types/types';
 
 export const InventoryScreen: React.FC = () => {
-    const { products, loading, loadProducts, toggleStatus } = useInventory();
+    const { products, loading, loadProducts, toggleStatus, deleteInactiveProduct } = useInventory();
     
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
@@ -28,6 +28,7 @@ export const InventoryScreen: React.FC = () => {
                 loading={loading}
                 onEdit={openEdit}
                 onToggleStatus={toggleStatus}
+                onDeleteInactive={deleteInactiveProduct}
                 onCreate={openCreate}
             />
 

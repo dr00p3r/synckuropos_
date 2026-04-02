@@ -33,9 +33,10 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
     // Estado del producto creado en el flujo de creación
     const [createdProductData, setCreatedProductData] = useState<Product | null>(null);
+    const [localProductData, setLocalProductData] = useState<Product | null>(null);
 
     // Producto activo (editando o recién creado)
-    const activeProduct = productToEdit || createdProductData;
+    const activeProduct = localProductData || productToEdit || createdProductData;
     const isEditMode = !!activeProduct;
 
     // UI State
@@ -69,6 +70,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         setAllowDecimal(false);
         setStockForm(INITIAL_STOCK_STATE);
         setCreatedProductData(null);
+        setLocalProductData(null);
         setActiveIndex(0);
     }, []);
 
@@ -79,6 +81,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         setPrice(product.basePrice / 100);
         setIsTaxable(product.isTaxable);
         setAllowDecimal(product.allowDecimalQuantity);
+        setLocalProductData(product);
         setCreatedProductData(null);
         // Reset stock form cuando cambia el producto
         setStockForm(INITIAL_STOCK_STATE);
@@ -139,17 +142,46 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
         if (!db) return;
 
+        const normalizedCode = code.trim();
+
         setLoading(true);
         try {
             if (activeProduct) {
+                if (normalizedCode) {
+                    const duplicatedCodeDoc = await db.products.findOne({
+                        selector: {
+                            _deleted: false,
+                            code: normalizedCode,
+                            productId: { $ne: activeProduct.productId }
+                        }
+                    }).exec();
+
+                    if (duplicatedCodeDoc) {
+                        toast.showError('Ya existe otro producto con ese código');
+                        logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'duplicate_code_on_update' });
+                        return;
+                    }
+                }
+
                 // Actualizar producto existente
                 await productRepository.updateProduct(db, activeProduct, {
                     name,
-                    code,
+                    code: normalizedCode,
                     basePrice: Math.round((price || 0) * 100),
                     isTaxable,
                     allowDecimalQuantity: allowDecimal
                 });
+
+                setLocalProductData(prev => prev ? {
+                    ...prev,
+                    name,
+                    code: normalizedCode,
+                    basePrice: Math.round((price || 0) * 100),
+                    isTaxable,
+                    allowDecimalQuantity: allowDecimal,
+                    updatedAt: new Date().toISOString()
+                } : prev);
+
                 toast.showSuccess('Información actualizada');
 
                 // Si estamos editando uno existente desde el inicio, cerramos
@@ -159,10 +191,27 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
                     onHide();
                 }
             } else {
+                if (normalizedCode) {
+                    const existingProductDoc = await db.products.findOne({
+                        selector: {
+                            _deleted: false,
+                            code: normalizedCode
+                        }
+                    }).exec();
+
+                    if (existingProductDoc) {
+                        const existingProduct = existingProductDoc.toJSON() as Product;
+                        loadProductData(existingProduct);
+                        toast.showInfo('Código existente: se abrió el producto para editar y sumar stock');
+                        logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'product-form', errorCount: 1, reason: 'duplicate_code_redirected_to_edit' });
+                        return;
+                    }
+                }
+
                 // Crear nuevo producto
                 const newProd = await productRepository.createProduct(db, {
                     name,
-                    code,
+                    code: normalizedCode,
                     basePrice: Math.round((price || 0) * 100),
                     isTaxable,
                     allowDecimalQuantity: allowDecimal
@@ -171,6 +220,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
                 toast.showSuccess('Producto creado. Configure el stock.');
                 logMetric(TelemetryEvents.TASK_COMPLETION, { taskName: 'INVENTORY_CREATE' });
                 setCreatedProductData(newProd);
+                setLocalProductData(newProd);
                 setActiveIndex(1);
                 onSave();
             }
@@ -180,7 +230,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
         } finally {
             setLoading(false);
         }
-    }, [name, code, price, isTaxable, allowDecimal, activeProduct, productToEdit, db, toast, onSave, onHide]);
+    }, [name, code, price, isTaxable, allowDecimal, activeProduct, productToEdit, db, toast, onSave, onHide, loadProductData, logMetric]);
 
     // Lógica real de guardado de stock (extraída para reuso en confirmación)
     const executeStockSave = useCallback(async () => {
@@ -188,6 +238,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
 
         setLoading(true);
         try {
+            const movedQuantity = stockForm.qtyMove || 0;
             await productRepository.registerStockMovement(db, activeProduct, {
                 quantityToMove: stockForm.qtyMove?.toString() || '0',
                 costPerUnit: stockForm.cost?.toString() || '0',
@@ -195,15 +246,22 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide }: UsePr
                 newSalePrice: ''
             }, currentUser?.userId || 'unknown');
 
+            setLocalProductData(prev => prev ? {
+                ...prev,
+                stock: Math.max(0, prev.stock + movedQuantity),
+                updatedAt: new Date().toISOString()
+            } : prev);
+
             toast.showSuccess('Stock actualizado');
             setStockForm(INITIAL_STOCK_STATE);
             onSave();
+            onHide();
         } catch (e) {
             toast.showError('Error al mover stock');
         } finally {
             setLoading(false);
         }
-    }, [activeProduct, db, stockForm, currentUser, toast, onSave]);
+    }, [activeProduct, db, stockForm, currentUser, toast, onSave, onHide]);
 
     // Guardar movimiento de stock
     const handleSaveStock = useCallback(async () => {

@@ -38,5 +38,20 @@ export const useInventory = () => {
         }
     };
 
-    return { products, loading, loadProducts, toggleStatus };
+    const deleteInactiveProduct = async (product: Product) => {
+        try {
+            if (product.isActive) {
+                toast.showWarn('Solo se pueden eliminar productos inactivos');
+                return;
+            }
+
+            await productRepository.deleteInactiveProduct(db, product);
+            toast.showSuccess('Producto eliminado definitivamente');
+            loadProducts();
+        } catch (e) {
+            toast.showError('Error al eliminar producto');
+        }
+    };
+
+    return { products, loading, loadProducts, toggleStatus, deleteInactiveProduct };
 };

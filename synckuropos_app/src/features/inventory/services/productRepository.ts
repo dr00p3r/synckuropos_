@@ -103,6 +103,28 @@ export const productRepository = {
         }
     },
 
+    // Eliminar definitivamente (soft-delete real para excluir de consultas)
+    async deleteInactiveProduct(db: any, product: Product) {
+        if (product.isActive) {
+            throw new Error('Solo se pueden eliminar productos inactivos');
+        }
+
+        const productDoc = await db.products.findOne({
+            selector: { productId: product.productId, _deleted: false }
+        }).exec();
+
+        if (!productDoc) {
+            throw new Error('Producto no encontrado para eliminar');
+        }
+
+        return productDoc.update({
+            $set: {
+                _deleted: true,
+                updatedAt: new Date().toISOString()
+            }
+        });
+    },
+
     getCombosByProduct(db: any, productId: string) {
         return db.comboProducts.find({
             selector: { 

@@ -31,6 +31,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         processingPayment
     } = usePaymentLogic({ saleItems, summary, onSaleCompleted });
 
+    const receivedValue = receivedAmount ? parseFloat(receivedAmount) : 0;
+
     // Footer del modal con botones de acción
     const footer = (
         <div>
@@ -95,17 +97,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             id="received" 
                             value={receivedAmount ? parseFloat(receivedAmount) : null} 
                             onValueChange={(e) => setReceivedAmount(e.value?.toString() || '')}
-                            onInput={(e: any) => {
-                                // Actualizar en tiempo real mientras escribe
-                                const rawValue = e.target.value.replace(/[^0-9.]/g, '');
-                                if (rawValue !== '' && !isNaN(parseFloat(rawValue))) {
-                                    setReceivedAmount(rawValue);
-                                }
-                            }}
                             min={0} 
                             maxFractionDigits={2} 
+                            useGrouping={false}
                             placeholder="0.00"
-                            className={parseFloat(receivedAmount) < (summary.total/100) && !isCredit ? 'p-invalid' : ''}
+                            className={receivedValue < (summary.total / 100) && !isCredit ? 'p-invalid' : ''}
                         />
                     </div>
                 </div>
