@@ -1,94 +1,94 @@
-
+import { eq, and, between, like, inArray } from 'drizzle-orm';
+import type { AppDatabase } from '@/hooks/useDatabase';
 import type { InventoryMovement } from '../types';
-
-function escapeRegExp(string: string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+import * as schema from '@/db/schema';
 
 export const profitRepository = {
-    // Buscar productos para el AutoComplete
-    async searchProducts(db: any, query: string) {
+    async searchProducts(db: AppDatabase, query: string) {
         if (!query) return [];
 
-        const safeQuery = escapeRegExp(query);
+        const results = await db
+            .select()
+            .from(schema.products)
+            .where(
+                and(
+                    eq(schema.products._deleted, false),
+                    like(schema.products.name, `%${query}%`)
+                )
+            )
+            .limit(10);
 
-        const results = await db.products.find({
-            selector: {
-                name: {
-                    $regex: safeQuery,
-                    $options: 'i' // 'i' = Case Insensitive
-                }
-            },
-            limit: 10
-        }).exec();
-
-        return results.map((doc: any) => ({ label: doc.name, value: doc.productId }));
+        return results.map((doc) => ({ label: doc.name, value: doc.productId }));
     },
 
     async getProfitMovements(
-        db: any,
+        db: AppDatabase,
         startDate: Date,
         endDate: Date,
         productIds: string[] = []
     ): Promise<InventoryMovement[]> {
-        const startISO = startDate.toISOString();
-        const endISO = endDate.toISOString();
+        const startMs = startDate.getTime();
+        const endMs = endDate.getTime();
 
-        // 1. Obtener VENTAS (Ingresos)
-        // Nota: Para filtrar por producto exacto en ventas, primero traemos las ventas del rango
-        // y luego filtramos sus detalles. Es más rápido que buscar en todos los detalles.
-        const salesDocs = await db.sales.find({
-            selector: {
-                isActive: true,
-                createdAt: { $gte: startISO, $lte: endISO }
-            }
-        }).exec();
+        // 1. Obtener ventas del rango
+        const salesRows = await db
+            .select()
+            .from(schema.sales)
+            .where(
+                and(
+                    eq(schema.sales._deleted, false),
+                    between(schema.sales.createdAt, startMs, endMs)
+                )
+            );
 
-        const saleIds = salesDocs.map((s: any) => s.saleId);
+        const saleIds = salesRows.map((s) => s.saleId);
 
-        const saleDetailsDocs = await db.saleDetails.find({
-            selector: { saleId: { $in: saleIds } }
-        }).exec();
+        // 2. Obtener detalles de esas ventas
+        const saleDetailsRows = await db
+            .select()
+            .from(schema.saleItems)
+            .where(inArray(schema.saleItems.saleId, saleIds));
 
-        // 2. Obtener ABASTECIMIENTOS (Gastos/Inversión)
-        const supplySelector: any = {
-            isActive: true,
-            supplyDate: { $gte: startISO, $lte: endISO }
-        };
-
-        // Optimización: Si hay filtro de productos, úsalo directo en la query de supplyings
+        // 3. Obtener abastecimientos del rango
+        const supplyConditions = [
+            eq(schema.supplyings._deleted, false),
+            between(schema.supplyings.supplyDate, startMs, endMs)
+        ];
         if (productIds.length > 0) {
-            supplySelector.productId = { $in: productIds };
+            supplyConditions.push(inArray(schema.supplyings.productId, productIds));
         }
 
-        const suppliesDocs = await db.supplyings.find({
-            selector: supplySelector
-        }).exec();
+        const suppliesRows = await db
+            .select()
+            .from(schema.supplyings)
+            .where(and(...supplyConditions));
 
-        // 3. Obtener Nombres de Productos (Diccionario)
-        // Recolectamos todos los productIds involucrados para hacer un solo fetch
+        // 4. Obtener nombres de productos
         const allProductIds = new Set([
-            ...saleDetailsDocs.map((d: any) => d.productId),
-            ...suppliesDocs.map((s: any) => s.productId)
+            ...saleDetailsRows.map((d) => d.productId),
+            ...suppliesRows.map((s) => s.productId)
         ]);
 
-        const productsDocs = await db.products.find({
-            selector: { productId: { $in: Array.from(allProductIds) } }
-        }).exec();
+        const productRows = await db
+            .select()
+            .from(schema.products)
+            .where(inArray(schema.products.productId, Array.from(allProductIds)));
 
         const productMap = new Map<string, string>();
-        productsDocs.forEach((p: any) => productMap.set(p.productId, p.name));
+        productRows.forEach((p) => productMap.set(p.productId, p.name));
 
-        // 4. Unificar y Transformar a "Movimientos"
+        // 5. Unificar movimientos
         const movements: InventoryMovement[] = [];
 
-        // Procesar Ventas (Solo si el producto está en el filtro o no hay filtro)
-        saleDetailsDocs.forEach((d: any) => {
-            if (productIds.length > 0 && !productIds.includes(d.productId)) return;
+        const saleMap = new Map(salesRows.map(s => [s.saleId, s]));
 
+        for (const d of saleDetailsRows) {
+            if (productIds.length > 0 && !productIds.includes(d.productId)) continue;
+
+            const sale = saleMap.get(d.saleId);
             movements.push({
-                id: d.saleDetailId,
-                date: d.createdAt || salesDocs.find((s: any) => s.saleId === d.saleId)?.createdAt, // Fallback fecha
+                id: d.id,
+                date: d.createdAt || sale?.createdAt || 0,
                 type: 'SALE',
                 productName: productMap.get(d.productId) || 'Desconocido',
                 quantity: d.quantity,
@@ -96,10 +96,10 @@ export const profitRepository = {
                 totalValue: d.lineTotal,
                 documentId: d.saleId
             });
-        });
+        }
 
-        suppliesDocs.forEach((s: any) => {
-            if (productIds.length > 0 && !productIds.includes(s.productId)) return;
+        for (const s of suppliesRows) {
+            if (productIds.length > 0 && !productIds.includes(s.productId)) continue;
 
             movements.push({
                 id: s.supplyingId,
@@ -111,9 +111,8 @@ export const profitRepository = {
                 totalValue: s.quantity * s.unitCost,
                 documentId: s.supplyingId
             });
-        });
+        }
 
-        // Ordenar por fecha descendente
-        return movements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return movements.sort((a, b) => b.date - a.date);
     }
 };

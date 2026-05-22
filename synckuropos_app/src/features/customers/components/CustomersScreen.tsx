@@ -32,7 +32,7 @@ export const CustomersScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full min-h-0 flex flex-column">
+        <div className="h-full">
             <CustomersTable
                 customers={customers}
                 loading={loading}

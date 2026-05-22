@@ -8,6 +8,9 @@ import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
 import { Tag } from 'primereact/tag';
 import { formatCurrency } from '@/utils/formatters';
+import { StatusAction } from '@/components/common/StatusAction';
+import { getRowClassName } from '@/utils/tableUtils';
+import { PageCard } from '@/components/common/PageCard';
 import type { CustomerWithDebt } from '../services/customerRepository';
 
 interface CustomersTableProps {
@@ -24,6 +27,12 @@ interface CustomersTableProps {
     onCreate: () => void;
 }
 
+const DEBT_COLOR_CLASS: Record<string, string> = {
+    danger: 'text-red-500',
+    warning: 'text-orange-500',
+    success: 'text-green-500',
+};
+
 export const CustomersTable: React.FC<CustomersTableProps> = ({
     customers,
     loading,
@@ -37,15 +46,9 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
     onToggleStatus,
     onCreate
 }) => {
-    // Estilos de fila para inactivos
-    const rowClassName = (data: CustomerWithDebt) => {
-        return !data.isActive ? 'surface-100 text-500 font-italic' : '';
-    };
-
-    // Templates
     const nameTemplate = (rowData: CustomerWithDebt) => (
         <div className="flex align-items-center gap-2">
-            {!rowData.isActive && <i className="pi pi-ban text-xs" title="Inactivo"></i>}
+            {rowData._deleted && <i className="pi pi-ban text-xs" title="Inactivo"></i>}
             <div className="flex flex-column">
                 <span className="font-medium">{rowData.fullname}</span>
                 {rowData.email && (
@@ -77,7 +80,6 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
             return <Tag value="Sin deuda" severity="success" />;
         }
 
-        // Calcular porcentaje de uso del crédito
         const usagePercent = rowData.creditLimit > 0 
             ? (rowData.debtTotal / rowData.creditLimit) * 100 
             : 0;
@@ -88,7 +90,7 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
 
         return (
             <div className="flex flex-column gap-1">
-                <span className={`font-bold text-${severity === 'danger' ? 'red' : severity === 'warning' ? 'orange' : 'green'}-500`}>
+                <span className={`font-bold ${DEBT_COLOR_CLASS[severity]}`}>
                     {formatCurrency(rowData.debtTotal)}
                 </span>
                 <span className="text-xs text-500">{usagePercent.toFixed(0)}% usado</span>
@@ -97,27 +99,13 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
     };
 
     const actionTemplate = (rowData: CustomerWithDebt) => (
-        <div className="flex gap-2 justify-content-end">
-            <Button
-                icon="pi pi-pencil"
-                rounded
-                text
-                severity="info"
-                onClick={() => onEdit(rowData)}
-                tooltip="Editar"
-            />
-            <Button
-                icon={rowData.isActive ? "pi pi-eye-slash" : "pi pi-check-circle"}
-                rounded
-                text
-                severity={rowData.isActive ? "danger" : "success"}
-                onClick={() => onToggleStatus(rowData)}
-                tooltip={rowData.isActive ? "Desactivar" : "Reactivar"}
-            />
-        </div>
+        <StatusAction
+            onEdit={() => onEdit(rowData)}
+            onToggleStatus={() => onToggleStatus(rowData)}
+            isActive={!rowData._deleted}
+        />
     );
 
-    // Header
     const header = (
         <div className="flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="flex align-items-center gap-3 flex-grow-1 flex-wrap">
@@ -155,12 +143,12 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
                 </div>
             </div>
 
-            <Button label="Nuevo Cliente" icon="pi pi-plus" onClick={onCreate} />
+            <Button label="Nuevo Cliente" icon="pi pi-user-plus" rounded onClick={onCreate} />
         </div>
     );
 
     return (
-        <div className="card shadow-1 p-3 bg-white border-round-xl h-full flex flex-column">
+        <PageCard shadow="1" variant="white" padding="1" className="h-full flex flex-column">
             <DataTable
                 value={customers}
                 paginator
@@ -170,9 +158,10 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
                 header={header}
                 loading={loading}
                 emptyMessage="No se encontraron clientes."
-                className="p-datatable-sm flex-grow-1"
+                className="flex-grow-1"
+                size="small"
                 stripedRows
-                rowClassName={rowClassName}
+                rowClassName={getRowClassName}
                 scrollable
                 scrollHeight="flex"
             >
@@ -208,6 +197,6 @@ export const CustomersTable: React.FC<CustomersTableProps> = ({
                     style={{ minWidth: '8rem', textAlign: 'right' }} 
                 />
             </DataTable>
-        </div>
+        </PageCard>
     );
 };

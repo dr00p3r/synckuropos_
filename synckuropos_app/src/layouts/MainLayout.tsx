@@ -12,27 +12,19 @@ interface MainLayoutProps {
     userRole: string;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({
-    children,
-    userRole,
-}) => {
-    const location = useLocation(); // Hook para saber en qué ruta estamos
-    const [visibleMobile, setVisibleMobile] = useState(false);
+interface SidebarContentProps {
+    userRole: string;
+    location: ReturnType<typeof useLocation>;
+    onNavigate: () => void;
+}
 
+const SidebarContent: React.FC<SidebarContentProps> = ({ userRole, location, onNavigate }) => {
     const renderMenuItem = (item: MenuItem) => {
         if (!item.roles.includes(userRole)) return null;
-
-        // Comparamos el path actual con el path del item
-        // location.pathname podría ser "/" o "/customers", etc.
         const isActive = location.pathname === item.path;
-
         return (
             <div key={item.id} className="mb-2">
-                <Link
-                    to={item.path}
-                    className="no-underline"
-                    onClick={() => setVisibleMobile(false)}
-                >
+                <Link to={item.path} className="no-underline" onClick={onNavigate}>
                     <div className={`nav-item p-ripple ${isActive ? 'active' : ''}`}>
                         <i className={`${item.icon} mr-3 text-xl`}></i>
                         <span className="font-medium">{item.label}</span>
@@ -43,10 +35,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         );
     };
 
-    // Contenido del Sidebar (Reutilizable para Móvil y Desktop)
-    const SidebarContent = () => (
+    return (
         <div className="flex flex-column h-full">
-            {/* Header: Logo o Usuario */}
             <div className="flex align-items-center gap-2 px-3 py-4 mb-3 border-bottom-1 border-white-alpha-10">
                 <Avatar icon="pi pi-user" size="large" shape="circle" className="bg-white-alpha-20 text-white" />
                 <div className="flex flex-column">
@@ -54,19 +44,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     <span className="text-sm text-white-alpha-70">{userRole.toUpperCase()}</span>
                 </div>
             </div>
-
-            {/* Menú Principal */}
             <div className="flex-1 px-3 overflow-y-auto">
                 <span className="text-xs font-semibold text-white-alpha-50 mb-2 block uppercase">Menu</span>
                 {MENU_ITEMS.map(renderMenuItem)}
             </div>
-
-            {/* Footer: Ajustes */}
             <div className="p-3 mt-auto border-top-1 border-white-alpha-10">
                 {renderMenuItem(SETTINGS_ITEM)}
             </div>
         </div>
     );
+};
+
+export const MainLayout: React.FC<MainLayoutProps> = ({
+    children,
+    userRole,
+}) => {
+    const location = useLocation();
+    const [visibleMobile, setVisibleMobile] = useState(false);
 
     return (
         <div className="flex h-screen surface-ground overflow-hidden">
@@ -82,14 +76,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 </div>
 
                 {/* Main: flex-1 + min-h-0 + overflow-hidden para que hijos controlen scroll */}
-                <main className="flex-1 min-h-0 p-3 md:p-4 flex flex-column overflow-hidden">
+                <main className="flex-1 min-h-0 p-4 flex flex-column overflow-hidden">
                     {children}
                 </main>
             </div>
 
             {/* 2. SIDEBAR DESKTOP */}
             <div className="hidden md:flex flex-column fixed right-0 top-0 h-full shadow-2 custom-sidebar w-18rem">
-                <SidebarContent />
+                <SidebarContent userRole={userRole} location={location} onNavigate={() => setVisibleMobile(false)} />
             </div>
 
             {/* Sidebar Móvil */}
@@ -99,7 +93,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 onHide={() => setVisibleMobile(false)}
                 className="custom-sidebar w-18rem border-none"
             >
-                <SidebarContent />
+                <SidebarContent userRole={userRole} location={location} onNavigate={() => setVisibleMobile(false)} />
             </Sidebar>
         </div>
     );

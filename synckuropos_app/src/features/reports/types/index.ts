@@ -32,8 +32,8 @@ export interface UserOption {
 export type MovementType = 'SALE' | 'SUPPLY';
 
 export interface InventoryMovement {
-    id: string;             // saleDetailId o supplyingId
-    date: string;           // createdAt o supplyDate
+    id: string;             // saleItem.id o supplyingId
+    date: number;           // timestamp Unix ms
     type: MovementType;
     productName: string;
     quantity: number;
@@ -49,6 +49,40 @@ export interface ProfitReportData {
     roi: number;            // Return on Investment %
     movements: InventoryMovement[]; // Lista unificada
     chartData: any;         // Comparativa Ingreso vs Gasto
+}
+
+export interface CustomerOption {
+    label: string;
+    value: string;
+}
+
+export interface DebtTransaction {
+    id: string;
+    type: 'SALE' | 'PAYMENT';
+    time: string;
+    userId: string;
+    userName: string;
+    amount: number;
+    products?: { name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+}
+
+export interface DebtReportEntry {
+    date: string;
+    dateMs: number;
+    credited: number;
+    paid: number;
+    runningDebt: number;
+    transactions: DebtTransaction[];
+}
+
+export interface DebtReportData {
+    customerId: string;
+    customerName: string;
+    openingBalance: number;
+    closingBalance: number;
+    totalCredited: number;
+    totalPaid: number;
+    dailyData: DebtReportEntry[];
 }
 
 export type { Sale, SaleDetail, Product };

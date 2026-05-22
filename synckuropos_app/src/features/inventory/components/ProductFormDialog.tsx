@@ -8,32 +8,20 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Checkbox } from 'primereact/checkbox';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { useProductForm } from '../hooks/useProductForm';
+import { tabHeaderTemplate } from '@/utils/tabUtils';
 import { ComboManager } from './ComboManager';
 import type { Product } from '@/types/types';
+import { getStockByProduct } from '../../../db/stockHelpers';
+import { useDatabase } from '@/hooks/useDatabase';
 
-/**
-/**
- * Evalúa expresiones matemáticas simples de forma segura
- * Soporta: +, -, *, /, paréntesis
- */
 const evaluateExpression = (expr: string): number | null => {
     try {
-        // Limpiar espacios
         const cleaned = expr.replace(/\s/g, '');
-
-        // Validar que solo contenga números, operadores y paréntesis permitidos
-        if (!/^[0-9+\-*/.()]+$/.test(cleaned)) {
-            return null;
-        }
-
-        // Evaluar usando Function (más seguro que eval)
+        if (!/^[0-9+\-*/.()]+$/.test(cleaned)) return null;
         const result = Function(`'use strict'; return (${cleaned})`)();
-
-        // Validar que el resultado sea un número válido
         if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
             return result;
         }
-
         return null;
     } catch (error) {
         return null;
@@ -45,13 +33,15 @@ interface ProductFormDialogProps {
     onHide: () => void;
     onSave: () => void;
     productToEdit?: Product;
+    onDuplicateCode?: (product: Product) => void;
 }
 
 export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
     visible,
     onHide,
     onSave,
-    productToEdit
+    productToEdit,
+    onDuplicateCode
 }) => {
     const {
         activeProduct,
@@ -73,17 +63,15 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         setActiveIndex,
         handleSaveGeneral,
         handleSaveStock
-    } = useProductForm({ visible, productToEdit, onSave, onHide });
+    } = useProductForm({ visible, productToEdit, onSave, onHide, onDuplicateCode });
 
-    // Estado local para el input de cantidad (permite expresiones)
+    const db = useDatabase();
+    const [currentStock, setCurrentStock] = useState<number | null>(null);
     const [quantityInput, setQuantityInput] = useState<string>('');
     const quantityInputRef = useRef<HTMLInputElement>(null);
-
-    // Estado local para el input de costo (permite expresiones)
     const [costInput, setCostInput] = useState<string>('');
     const costInputRef = useRef<HTMLInputElement>(null);
 
-    // Sincronizar el input de cantidad con el valor del formulario
     useEffect(() => {
         if (stockForm.qtyMove !== null) {
             setQuantityInput(stockForm.qtyMove.toString());
@@ -92,7 +80,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     }, [stockForm.qtyMove]);
 
-    // Sincronizar el input de costo con el valor del formulario
     useEffect(() => {
         if (stockForm.cost !== null) {
             setCostInput(stockForm.cost.toString());
@@ -101,22 +88,27 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     }, [stockForm.cost]);
 
-    // Procesar expresión matemática para cantidad
+    useEffect(() => {
+        const loadStock = async () => {
+            if (activeProduct?.productId && db && visible && activeIndex === 1) {
+                const stock = await getStockByProduct(db, activeProduct.productId);
+                setCurrentStock(stock);
+            }
+        };
+        loadStock();
+    }, [activeProduct?.productId, db, visible, activeIndex]);
+
     const handleQuantityBlur = () => {
         if (!quantityInput.trim()) {
             updateStockField('qtyMove', null);
             return;
         }
-
         const result = evaluateExpression(quantityInput);
-
         if (result !== null) {
-            // Redondear según si permite decimales
             const finalValue = allowDecimal ? Math.round(result * 100) / 100 : Math.round(result);
             updateStockField('qtyMove', finalValue);
             setQuantityInput(finalValue.toString());
         } else {
-            // Si no es válido, mantener el valor anterior
             if (stockForm.qtyMove !== null) {
                 setQuantityInput(stockForm.qtyMove.toString());
             } else {
@@ -125,22 +117,17 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     };
 
-    // Procesar expresión matemática para costo
     const handleCostBlur = () => {
         if (!costInput.trim()) {
             updateStockField('cost', null);
             return;
         }
-
         const result = evaluateExpression(costInput);
-
         if (result !== null) {
-            // Redondear a 2 decimales para costos
             const finalValue = Math.round(result * 100) / 100;
             updateStockField('cost', finalValue);
             setCostInput(finalValue.toString());
         } else {
-            // Si no es válido, mantener el valor anterior
             if (stockForm.cost !== null) {
                 setCostInput(stockForm.cost.toString());
             } else {
@@ -149,7 +136,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     };
 
-    // Procesar al presionar Enter en cantidad
     const handleQuantityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleQuantityBlur();
@@ -157,21 +143,12 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
         }
     };
 
-    // Procesar al presionar Enter en costo
     const handleCostKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleCostBlur();
             e.currentTarget.blur();
         }
     };
-
-    // Template para headers de tabs
-    const tabHeaderTemplate = (options: any) => (
-        <div className="flex align-items-center gap-2 p-3 cursor-pointer" onClick={options.onClick}>
-            <i className={options.leftIcon} />
-            <span className="font-bold">{options.title}</span>
-        </div>
-    );
 
     return (
         <Dialog
@@ -188,7 +165,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     onTabChange={(e) => setActiveIndex(e.index)}
                     className="p-0"
                 >
-                    {/* TAB 1: GENERAL */}
                     <TabPanel
                         header="General"
                         leftIcon="pi pi-id-card"
@@ -196,19 +172,18 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                     >
                         <div className="flex flex-column gap-4 pt-3">
                             <div className="flex flex-column gap-2">
-                                <label htmlFor="name" className="font-bold">Nombre del Producto</label>
+                                <label htmlFor="name" className="font-semibold">Nombre del Producto</label>
                                 <InputText
                                     id="name"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    autoFocus
                                     className="w-full"
                                 />
                             </div>
 
                             <div className="formgrid grid">
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label htmlFor="code" className="font-bold">Código (Opcional)</label>
+                                    <label htmlFor="code" className="font-semibold">Código (Opcional)</label>
                                     <InputText
                                         id="code"
                                         value={code}
@@ -217,14 +192,14 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                     />
                                 </div>
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label htmlFor="price" className="font-bold">Precio Venta ($)</label>
+                                    <label htmlFor="price" className="font-semibold">Precio Venta ($)</label>
                                     <InputNumber
                                         id="price"
                                         value={price}
                                         onValueChange={(e) => setPrice(e.value ?? null)}
                                         mode="currency"
-                                        currency="USD"
-                                        locale="en-US"
+                                            currency="USD"
+                                            locale="es-EC"
                                         className="w-full"
                                         inputClassName="w-full"
                                     />
@@ -261,7 +236,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                         </div>
                     </TabPanel>
 
-                    {/* TAB 2: STOCK */}
                     <TabPanel
                         header="Inventario"
                         leftIcon="pi pi-box"
@@ -269,21 +243,22 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                         headerTemplate={(opts) => tabHeaderTemplate({ ...opts, title: 'Inventario' })}
                     >
                         <div className="flex flex-column gap-4 pt-3">
-                            {activeProduct && (
+                            {activeProduct && currentStock !== null && (
                                 <div className="flex justify-content-between align-items-center surface-card p-3 border-round shadow-1">
                                     <span className="text-xl font-medium">Stock Actual:</span>
-                                    <span className={`text-2xl font-bold ${activeProduct.stock <= 5 ? 'text-red-500' : 'text-green-500'}`}>
-                                        {activeProduct.stock}
+                                    <span className={`text-2xl font-bold ${currentStock <= 5 ? 'text-red-500' : 'text-green-500'}`}>
+                                        {currentStock}
                                     </span>
                                 </div>
                             )}
 
                             <div className="formgrid grid">
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label className="font-bold">
+                                    <label htmlFor="stockQty" className="font-semibold">
                                         Cantidad a {activeProduct ? 'Mover' : 'Agregar'}
                                     </label>
                                     <InputText
+                                        id="stockQty"
                                         ref={quantityInputRef}
                                         value={quantityInput}
                                         onChange={(e) => setQuantityInput(e.target.value)}
@@ -295,8 +270,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                                 </div>
 
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label className="font-bold">Costo Unitario ($)</label>
+                                    <label htmlFor="stockCost" className="font-semibold">Costo Unitario ($)</label>
                                     <InputText
+                                        id="stockCost"
                                         ref={costInputRef}
                                         value={costInput}
                                         onChange={(e) => setCostInput(e.target.value)}
@@ -309,8 +285,9 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                             </div>
 
                             <div className="flex flex-column gap-2">
-                                <label className="font-bold">Motivo</label>
+                                <label htmlFor="stockReason" className="font-semibold">Motivo</label>
                                 <InputTextarea
+                                    id="stockReason"
                                     rows={2}
                                     value={stockForm.reason}
                                     onChange={(e) => updateStockField('reason', e.target.value)}
@@ -330,7 +307,6 @@ export const ProductFormDialog: React.FC<ProductFormDialogProps> = ({
                         </div>
                     </TabPanel>
 
-                    {/* TAB 3: COMBOS */}
                     <TabPanel
                         header="Combos"
                         leftIcon="pi pi-tags"

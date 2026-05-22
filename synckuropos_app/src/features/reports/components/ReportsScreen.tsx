@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { SalesDetailView } from './SalesDetailView';
-import { ProfitDetailView } from './ProfitDetailView'; // <--- Importamos tu nueva vista
+import { ProfitDetailView } from './ProfitDetailView';
+import { DebtDetailView } from './DebtDetailView';
 
 // Actualizamos los tipos para incluir PROFIT
 type ReportType = 'SALES' | 'PROFIT' | 'DEBT' | null;
@@ -15,6 +16,7 @@ export const ReportsScreen: React.FC = () => {
         switch (activeReport) {
             case 'SALES': return 'Reporte de Ventas';
             case 'PROFIT': return 'Ganancias y Flujo de Caja';
+            case 'DEBT': return 'Fiado / Deuda';
             default: return 'Panel de Reportes';
         }
     };
@@ -24,7 +26,8 @@ export const ReportsScreen: React.FC = () => {
             {/* KPI 1: Ventas */}
             <div className="col-12 md:col-6 lg:col-3">
                 <Card 
-                    className="cursor-pointer hover:surface-100 transition-duration-200 border-left-3 border-blue-500 shadow-2 h-full"
+                    className="kpi-card shadow-1 h-full"
+                    style={{ borderLeft: '3px solid var(--color-info)' }}
                     onClick={() => setActiveReport('SALES')}
                 >
                     <div className="flex justify-content-between mb-3">
@@ -40,10 +43,11 @@ export const ReportsScreen: React.FC = () => {
                 </Card>
             </div>
 
-            {/* KPI 2: Ganancias y Flujo (YA NO ES PLACEHOLDER) */}
+            {/* KPI 2: Ganancias y Flujo */}
             <div className="col-12 md:col-6 lg:col-3">
                 <Card 
-                    className="cursor-pointer hover:surface-100 transition-duration-200 border-left-3 border-green-500 shadow-2 h-full"
+                    className="kpi-card shadow-1 h-full"
+                    style={{ borderLeft: '3px solid var(--color-success)' }}
                     onClick={() => setActiveReport('PROFIT')}
                 >
                     <div className="flex justify-content-between mb-3">
@@ -59,18 +63,23 @@ export const ReportsScreen: React.FC = () => {
                 </Card>
             </div>
 
-            {/* KPI 3: Cuentas por Cobrar (Placeholder para futuro) */}
+            {/* KPI 3: Fiado / Deuda */}
             <div className="col-12 md:col-6 lg:col-3">
-                <Card className="border-left-3 border-orange-500 shadow-2 opacity-60 h-full">
+                <Card 
+                    className="kpi-card shadow-1 h-full"
+                    style={{ borderLeft: '3px solid var(--color-warning)' }}
+                    onClick={() => setActiveReport('DEBT')}
+                >
                     <div className="flex justify-content-between mb-3">
                         <div>
                             <span className="block text-500 font-medium mb-3">Fiado / Deuda</span>
-                            <div className="text-900 font-medium text-xl">Próximamente</div>
+                            <div className="text-900 font-medium text-xl">Cuentas por Cobrar</div>
                         </div>
                         <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <i className="pi pi-users text-orange-500 text-xl" />
+                            <i className="pi pi-wallet text-orange-500 text-xl" />
                         </div>
                     </div>
+                    <span className="text-orange-500 font-medium text-sm">Click para ver detalle</span>
                 </Card>
             </div>
         </div>
@@ -78,29 +87,13 @@ export const ReportsScreen: React.FC = () => {
 
     return (
         <div className="h-full flex flex-column overflow-hidden surface-ground">
-            
-            {/* Header Fijo */}
-            <div className="p-3 shadow-1 z-1 surface-section flex align-items-center gap-3 flex-none">
-                {activeReport && (
-                    <Button 
-                        icon="pi pi-arrow-left" 
-                        text 
-                        rounded 
-                        onClick={() => setActiveReport(null)} 
-                        tooltip="Volver al Dashboard"
-                    />
-                )}
-                <h2 className="m-0 text-900 text-xl font-bold">
-                    {getHeaderTitle()}
-                </h2>
-            </div>
 
             {/* Contenido Flexible (ocupa el resto de la altura) */}
-            <div className="flex-grow-1 overflow-hidden relative p-3 flex flex-column">
+            <div className="flex-grow-1 overflow-hidden overflow-x-hidden relative flex flex-column">
                 
                 {/* DASHBOARD PRINCIPAL */}
                 {!activeReport && (
-                    <div className="h-full overflow-y-auto">
+                    <div className="h-full overflow-y-auto overflow-x-hidden">
                         {renderDashboard()}
                     </div>
                 )}
@@ -109,14 +102,20 @@ export const ReportsScreen: React.FC = () => {
                 {/* Usamos un contenedor h-full w-full para asegurar que ocupen el flex-grow */}
                 
                 {activeReport === 'SALES' && (
-                    <div className="h-full w-full">
+                    <div className="h-full w-full overflow-x-hidden">
                         <SalesDetailView />
                     </div>
                 )}
 
                 {activeReport === 'PROFIT' && (
-                    <div className="h-full w-full">
+                    <div className="h-full w-full overflow-x-hidden">
                         <ProfitDetailView />
+                    </div>
+                )}
+
+                {activeReport === 'DEBT' && (
+                    <div className="h-full w-full overflow-x-hidden">
+                        <DebtDetailView />
                     </div>
                 )}
             </div>

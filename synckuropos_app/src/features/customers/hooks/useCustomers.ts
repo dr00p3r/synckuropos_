@@ -9,20 +9,16 @@ export const useCustomers = () => {
     const db = useDatabase();
     const toast = useToast();
 
-    // Estado principal
     const [customers, setCustomers] = useState<CustomerWithDebt[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [showOnlyWithDebt, setShowOnlyWithDebt] = useState(false);
     const [showInactive, setShowInactive] = useState(false);
 
-    // Ordenamiento
     const [sortField, setSortField] = useState<SortField>('fullname');
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-    // Cargar clientes
     const loadCustomers = useCallback(async () => {
         if (!db) return;
 
@@ -38,20 +34,18 @@ export const useCustomers = () => {
         }
     }, [db, toast]);
 
-    // Cargar al montar
     useEffect(() => {
         if (db) {
             loadCustomers();
         }
     }, [db, loadCustomers]);
 
-    // Toggle estado activo/inactivo
     const toggleStatus = useCallback(async (customer: CustomerWithDebt) => {
         if (!db) return;
 
         try {
             const newStatus = await customerRepository.toggleCustomerStatus(db, customer.customerId);
-            toast.showSuccess(newStatus ? 'Cliente reactivado' : 'Cliente desactivado');
+            toast.showSuccess(newStatus ? 'Cliente desactivado' : 'Cliente reactivado');
             await loadCustomers();
         } catch (error) {
             console.error('Error cambiando estado:', error);
@@ -59,7 +53,6 @@ export const useCustomers = () => {
         }
     }, [db, toast, loadCustomers]);
 
-    // Manejar ordenamiento
     const handleSort = useCallback((field: SortField) => {
         if (sortField === field) {
             setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -69,21 +62,17 @@ export const useCustomers = () => {
         }
     }, [sortField]);
 
-    // Filtrar y ordenar clientes
     const filteredCustomers = useMemo(() => {
         let result = [...customers];
 
-        // Filtro por activos/inactivos
         if (!showInactive) {
-            result = result.filter(c => c.isActive);
+            result = result.filter(c => !c._deleted);
         }
 
-        // Filtro por deuda
         if (showOnlyWithDebt) {
             result = result.filter(c => c.debtTotal > 0);
         }
 
-        // Filtro por búsqueda
         if (searchTerm.trim()) {
             const search = searchTerm.toLowerCase();
             result = result.filter(c =>
@@ -93,7 +82,6 @@ export const useCustomers = () => {
             );
         }
 
-        // Ordenamiento
         result.sort((a, b) => {
             let aValue: any;
             let bValue: any;
@@ -131,12 +119,10 @@ export const useCustomers = () => {
     }, [customers, searchTerm, showOnlyWithDebt, showInactive, sortField, sortDirection]);
 
     return {
-        // Data
         customers: filteredCustomers,
         allCustomers: customers,
         loading,
 
-        // Filtros
         searchTerm,
         setSearchTerm,
         showOnlyWithDebt,
@@ -144,12 +130,10 @@ export const useCustomers = () => {
         showInactive,
         setShowInactive,
 
-        // Ordenamiento
         sortField,
         sortDirection,
         handleSort,
 
-        // Acciones
         loadCustomers,
         toggleStatus
     };

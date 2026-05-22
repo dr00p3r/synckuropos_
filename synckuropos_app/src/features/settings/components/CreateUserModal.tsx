@@ -89,7 +89,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
   const footer = (
     <div>
       <Button label="Cancelar" icon="pi pi-times" onClick={handleCancel} className="p-button-text" disabled={isCreating} />
-      <Button label="Crear Usuario" icon="pi pi-check" onClick={handleSubmit} autoFocus disabled={isCreating} loading={isCreating} />
+      <Button label="Crear Usuario" icon="pi pi-check" onClick={handleSubmit} disabled={isCreating} loading={isCreating} />
     </div>
   );
 
@@ -102,27 +102,26 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     <Dialog
       header="Crear Nuevo Usuario"
       visible={isOpen}
-      style={{ width: '450px' }}
+      style={{ width: '90vw', maxWidth: '450px' }}
       footer={footer}
       onHide={handleCancel}
       modal
       className="p-fluid"
     >
       <div className="field">
-        <label htmlFor="username" className="font-bold">Nombre de Usuario</label>
+        <label htmlFor="username" className="font-semibold">Nombre de Usuario</label>
         <InputText
           id="username"
           value={formData.username}
           onChange={(e) => handleInputChange('username', e.target.value)}
           required
-          autoFocus
           className={classNames({ 'p-invalid': submitted && (!formData.username || formData.username.length < 3) })}
         />
         {submitted && (!formData.username || formData.username.length < 3) && <small className="p-error">El nombre de usuario es requerido (mín 3 caracteres).</small>}
       </div>
 
       <div className="field">
-        <label htmlFor="password" className="font-bold">Contraseña</label>
+        <label htmlFor="password" className="font-semibold">Contraseña</label>
         <Password
           id="password"
           value={formData.password}
@@ -136,7 +135,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       </div>
 
       <div className="field">
-        <label htmlFor="confirmPassword" className="font-bold">Confirmar Contraseña</label>
+        <label htmlFor="confirmPassword" className="font-semibold">Confirmar Contraseña</label>
         <Password
           id="confirmPassword"
           value={formData.confirmPassword}
@@ -150,7 +149,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       </div>
 
       <div className="field">
-        <label htmlFor="role" className="font-bold">Rol</label>
+        <label htmlFor="role" className="font-semibold">Rol</label>
         <Dropdown
           id="role"
           value={formData.role}

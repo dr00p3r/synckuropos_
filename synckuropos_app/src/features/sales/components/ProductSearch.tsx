@@ -80,7 +80,6 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
                     placeholder="Escanear o buscar producto..."
                     className="w-full"
                     inputClassName="w-full p-3 font-medium"
-                    autoFocus
                     delay={300}
                     emptyMessage="No se encontraron productos"
                 />

@@ -11,7 +11,6 @@ const ReportsScreen = lazy(() => import('@/features/reports').then(module => ({ 
 const SettingsScreen = lazy(() => import('@/features/settings').then(module => ({ default: module.SettingsScreen })));
 
 import { useAuth } from './hooks/useAuth';
-import { Dashboard } from './pages/Dashboard';
 import { LoadingFallback } from '@/components/common/LoadingFallback';
 
 import { useTelemetry } from './hooks/useTelemetry';
@@ -58,7 +57,6 @@ function App() {
           <Route path="/customers" element={<CustomersScreen />} />
           <Route path="/reports" element={<ReportsScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/dashboard" element={<Dashboard />} />
 
           {/* Fallback para rutas no encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />

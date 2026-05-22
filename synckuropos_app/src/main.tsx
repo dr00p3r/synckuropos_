@@ -23,6 +23,7 @@ configurePrimeReact();
 const uiConfig = {
   ripple: true,
   inputStyle: 'outlined' as const,
+  locale: 'es',
   zIndex: {
     modal: 1100,
     overlay: 1000,

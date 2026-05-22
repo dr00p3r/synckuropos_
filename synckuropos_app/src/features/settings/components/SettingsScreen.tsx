@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth, useDatabase } from '@/hooks';
 import { CreateUserModal } from './CreateUserModal';
 import type { User } from '../types';
-import { generatePerformanceData } from '@/utils/performanceTest';
+import type { TaxRate, BankAccount } from '@/types/types';
+import { useSyncStatus } from '@/hooks/useSyncStatus';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Password } from 'primereact/password';
@@ -10,7 +11,11 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
+import { Dialog } from 'primereact/dialog';
+import { InputNumber } from 'primereact/inputnumber';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
+import { eq, desc } from 'drizzle-orm';
+import * as schema from '@/db/schema';
 
 const SettingsScreen: React.FC = () => {
   const { currentUser, updateUserPassword, getAllUsers, logout } = useAuth();
@@ -19,7 +24,12 @@ const SettingsScreen: React.FC = () => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
-  const [isGeneratingData, setIsGeneratingData] = useState(false);
+
+  // Estado de IVA
+  const [taxRatesList, setTaxRatesList] = useState<TaxRate[]>([]);
+  const [showTaxRateDialog, setShowTaxRateDialog] = useState(false);
+  const [newTaxRate, setNewTaxRate] = useState<number>(15);
+  const [activeTaxRate, setActiveTaxRate] = useState<TaxRate | null>(null);
 
   // Estado para el formulario de cambio de contraseña
   const [passwordForm, setPasswordForm] = useState({
@@ -29,16 +39,119 @@ const SettingsScreen: React.FC = () => {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Cargar usuarios al montar el componente (solo para admins)
+  // Estado de Cuentas Bancarias
+  const [bankAccountsList, setBankAccountsList] = useState<BankAccount[]>([]);
+  const [showBankAccountDialog, setShowBankAccountDialog] = useState(false);
+  const [bankAccountForm, setBankAccountForm] = useState({
+    bankName: '',
+    accountNumber: '',
+    accountHolder: ''
+  });
+
+  // Cargar usuarios y tasas de IVA al montar (solo para admins)
   useEffect(() => {
     if (currentUser?.role === 'admin') {
       loadUsers();
     }
+    loadTaxRates();
+    loadBankAccounts();
   }, [currentUser]);
 
   const loadUsers = async () => {
     const allUsers = await getAllUsers();
     setUsers(allUsers);
+  };
+
+  const loadTaxRates = async () => {
+    try {
+      const allRates = await db
+        .select()
+        .from(schema.taxRates)
+        .where(eq(schema.taxRates._deleted, false))
+        .orderBy(desc(schema.taxRates.effectiveFrom));
+      setTaxRatesList(allRates as TaxRate[]);
+      // La tasa activa es la más reciente con effectiveFrom <= ahora
+      const now = Date.now();
+      const active = allRates.find((r: any) => r.effectiveFrom <= now);
+      setActiveTaxRate((active as TaxRate) || null);
+    } catch (error) {
+      console.error('Error loading tax rates:', error);
+    }
+  };
+
+  const loadBankAccounts = async () => {
+    try {
+      const accounts = await db
+        .select()
+        .from(schema.bankAccounts)
+        .where(eq(schema.bankAccounts._deleted, false));
+      setBankAccountsList(accounts as BankAccount[]);
+    } catch (error) {
+      console.error('Error loading bank accounts:', error);
+    }
+  };
+
+  const handleAddBankAccount = async () => {
+    try {
+      if (!bankAccountForm.bankName.trim() || !bankAccountForm.accountNumber.trim() || !bankAccountForm.accountHolder.trim()) {
+        toast.current?.show({ severity: 'warn', summary: 'Atención', detail: 'Todos los campos son obligatorios' });
+        return;
+      }
+      const now = Date.now();
+      await db.insert(schema.bankAccounts).values({
+        id: crypto.randomUUID(),
+        bankName: bankAccountForm.bankName.trim(),
+        accountNumber: bankAccountForm.accountNumber.trim(),
+        accountHolder: bankAccountForm.accountHolder.trim(),
+        _deleted: false,
+        createdAt: now,
+        updatedAt: now,
+        synced: 0,
+      });
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'Cuenta bancaria agregada' });
+      setShowBankAccountDialog(false);
+      setBankAccountForm({ bankName: '', accountNumber: '', accountHolder: '' });
+      loadBankAccounts();
+    } catch (error) {
+      console.error('Error adding bank account:', error);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudo agregar la cuenta' });
+    }
+  };
+
+  const handleDeleteBankAccount = async (accountId: string) => {
+    try {
+      await db
+        .update(schema.bankAccounts)
+        .set({ _deleted: true, updatedAt: Date.now() })
+        .where(eq(schema.bankAccounts.id, accountId));
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: 'Cuenta eliminada' });
+      loadBankAccounts();
+    } catch (error) {
+      console.error('Error deleting bank account:', error);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la cuenta' });
+    }
+  };
+
+  const handleAddTaxRate = async () => {
+    try {
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      await db.insert(schema.taxRates).values({
+        id,
+        rate: newTaxRate / 100,
+        effectiveFrom: now,
+        _deleted: false,
+        createdAt: now,
+        updatedAt: now,
+        synced: 0,
+      });
+      toast.current?.show({ severity: 'success', summary: 'Éxito', detail: `Tasa de IVA ${newTaxRate}% agregada` });
+      setShowTaxRateDialog(false);
+      loadTaxRates();
+    } catch (error) {
+      console.error('Error adding tax rate:', error);
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'No se pudo agregar la tasa' });
+    }
   };
 
   const handlePasswordChange = (field: keyof typeof passwordForm, value: string) => {
@@ -100,6 +213,8 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const { formatLastSync, isOffline, lastSyncStatus, consecutiveFailures } = useSyncStatus();
+
   const handleLogout = () => {
     confirmDialog({
       message: '¿Estás seguro de que quieres cerrar sesión?',
@@ -111,36 +226,12 @@ const SettingsScreen: React.FC = () => {
     });
   };
 
-  const handleGenerateData = async () => {
-    confirmDialog({
-      message: '¿Estás seguro de que quieres generar 1000 productos de prueba?',
-      header: 'Confirmación',
-      icon: 'pi pi-exclamation-triangle',
-      accept: async () => {
-        setIsGeneratingData(true);
-        try {
-          const result = await generatePerformanceData(db);
-          toast.current?.show({
-            severity: 'success',
-            summary: 'Operación Completada',
-            detail: `Se generaron ${result.count} productos en ${result.duration}ms`
-          });
-        } catch (error) {
-          console.error(error);
-          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Error al generar datos' });
-        } finally {
-          setIsGeneratingData(false);
-        }
-      }
-    });
-  };
-
   const roleBodyTemplate = (user: User) => {
     return <Tag value={user.role === 'admin' ? 'Administrador' : 'Cajero'} severity={user.role === 'admin' ? 'info' : 'warning'} />;
   };
 
   const statusBodyTemplate = (user: User) => {
-    return <Tag value={user.isActive ? 'Activo' : 'Inactivo'} severity={user.isActive ? 'success' : 'danger'} />;
+    return <Tag value={!user._deleted ? 'Activo' : 'Inactivo'} severity={!user._deleted ? 'success' : 'danger'} />;
   };
 
   const dateBodyTemplate = (user: User) => {
@@ -156,25 +247,14 @@ const SettingsScreen: React.FC = () => {
   }
 
   return (
-    <div className="p-3">
+    <div className="h-full overflow-y-auto overflow-x-hidden pb-6">
       <Toast ref={toast} />
       <ConfirmDialog />
 
-      <div className="flex justify-content-between align-items-center mb-4">
-        <h1 className="text-3xl font-bold m-0 text-900">Ajustes</h1>
-        <Button
-          label="Cerrar Sesión"
-          icon="pi pi-power-off"
-          severity="danger"
-          text
-          onClick={handleLogout}
-        />
-      </div>
-
       <div className="grid">
         {/* Sección: Cambiar Contraseña */}
-        <div className="col-12 md:col-6">
-          <Card title="Seguridad" subTitle="Actualiza tu contraseña" className="h-full shadow-2">
+        <div className="col-12 md:col-4">
+          <Card title="Seguridad" subTitle="Actualiza tu contraseña" className="h-full shadow-1 border-round-xl bg-white">
             <form onSubmit={handlePasswordSubmit} className="flex flex-column gap-3">
               <div className="flex flex-column gap-2">
                 <label htmlFor="currentPassword">Contraseña Actual</label>
@@ -229,18 +309,23 @@ const SettingsScreen: React.FC = () => {
 
         {/* Sección: Gestión de Usuarios (Solo Admins) */}
         {currentUser.role === 'admin' && (
-          <div className="col-12 md:col-6">
-            <Card title="Usuarios" subTitle="Gestión de usuarios del sistema" className="h-full shadow-2">
-              <div className="mb-3 flex justify-content-end">
+          <div className="col-12 md:col-8">
+            <Card className="h-full shadow-1 border-round-xl bg-white">
+              <div className="flex justify-content-between align-items-center mb-3">
+                <div>
+                  <div className="text-xl font-bold text-900">Usuarios</div>
+                  <div className="text-sm text-600">Gestión de usuarios del sistema</div>
+                </div>
                 <Button
                   label="Nuevo Usuario"
                   icon="pi pi-user-plus"
                   onClick={() => setIsCreateUserModalOpen(true)}
-                  size="small"
+                  rounded
+                  raised
                 />
               </div>
 
-              <DataTable value={users} paginator rows={5} size="small" emptyMessage="No hay usuarios registrados.">
+              <DataTable value={users} scrollable scrollHeight="300px" size="small" stripedRows emptyMessage="No hay usuarios registrados.">
                 <Column field="username" header="Usuario" sortable body={(u) => (
                   <span>
                     {u.username} {u.userId === currentUser.userId && <span className="font-bold text-primary">(Tú)</span>}
@@ -254,26 +339,198 @@ const SettingsScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Sección: Herramientas de Desarrollo */}
-        {currentUser.role === 'admin' && (
-          <div className="col-12 mt-3">
-            <Card title="Herramientas de Desarrollo" className="shadow-2 border-left-3 border-orange-500">
-              <div className="flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                  <span className="font-bold block mb-1">Generador de Datos de Prueba</span>
-                  <span className="text-600 text-sm">Crea 1000 productos aleatorios para probar el rendimiento del inventario y las búsquedas.</span>
+        {/* Sección: Estado de Sincronización (visible solo si hay fallos o para admins) */}
+        {(currentUser.role === 'admin' || isOffline) && (
+          <div className="col-12 md:col-6">
+            <Card title="Sincronización" className="shadow-1 border-round-xl bg-white">
+              <div className="flex flex-column gap-2">
+                <div className="flex align-items-center justify-content-between">
+                  <span className="font-medium">Última sincronización:</span>
+                  <span className={isOffline ? 'text-red-500 font-bold' : 'text-green-500'}>
+                    {formatLastSync()}
+                  </span>
                 </div>
-                <Button
-                  label="Generar 1000 Productos"
-                  icon="pi pi-bolt"
-                  severity="warning"
-                  onClick={handleGenerateData}
-                  loading={isGeneratingData}
-                />
+                {isOffline && (
+                  <div className="flex align-items-center gap-2 text-red-500">
+                    <i className="pi pi-exclamation-circle" />
+                    <span>Sin conexión al servidor ({consecutiveFailures} fallos consecutivos)</span>
+                  </div>
+                )}
+                {lastSyncStatus === 'syncing' && (
+                  <div className="flex align-items-center gap-2 text-orange-500">
+                    <i className="pi pi-spin pi-spinner" />
+                    <span>Sincronizando...</span>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
         )}
+
+        {/* Sección: Configuración de IVA */}
+        {currentUser.role === 'admin' && (
+          <div className="col-12 md:col-6">
+            <Card title="Configuración de IVA" className="shadow-1 border-round-xl bg-white">
+              <div className="flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div>
+                  <span className="font-bold block mb-1">Tasa Actual</span>
+                  <span className="text-600 text-sm">
+                    {activeTaxRate
+                      ? (
+                          <span suppressHydrationWarning>
+                              {`${(activeTaxRate.rate * 100).toFixed(0)}% (desde ${new Date(activeTaxRate.effectiveFrom).toLocaleDateString('es-ES')})`}
+                          </span>
+                        )
+                      : 'No configurada'}
+                  </span>
+                </div>
+                <Button
+                  label="Nueva Tasa"
+                  icon="pi pi-plus"
+                  severity="warning"
+                  onClick={() => setShowTaxRateDialog(true)}
+                />
+              </div>
+
+              <DataTable value={taxRatesList} scrollable scrollHeight="200px" size="small" stripedRows emptyMessage="No hay tasas registradas.">
+                <Column
+                  field="rate"
+                  header="IVA"
+                  body={(r: TaxRate) => `${(r.rate * 100).toFixed(0)}%`}
+                />
+                <Column
+                  field="effectiveFrom"
+                  header="Vigente desde"
+                  body={(r: TaxRate) => <span suppressHydrationWarning>{new Date(r.effectiveFrom).toLocaleDateString('es-ES')}</span>}
+                />
+              </DataTable>
+            </Card>
+          </div>
+        )}
+
+        {/* Sección: Datos Bancarios */}
+        {currentUser.role === 'admin' && (
+          <div className="col-12 md:col-6">
+            <Card title="Datos Bancarios" className="shadow-1 border-round-xl bg-white">
+              <div className="flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                <div>
+                  <span className="font-bold block mb-1">Cuentas para transferencias</span>
+                  <span className="text-600 text-sm">
+                    {bankAccountsList.length > 0 ? `${bankAccountsList.length} cuenta(s) registrada(s)` : 'No hay cuentas registradas'}
+                  </span>
+                </div>
+                <Button
+                  label="Nueva Cuenta"
+                  icon="pi pi-plus"
+                  severity="info"
+                  onClick={() => setShowBankAccountDialog(true)}
+                />
+              </div>
+
+              <DataTable value={bankAccountsList} size="small" stripedRows emptyMessage="No hay cuentas registradas.">
+                <Column field="bankName" header="Banco" />
+                <Column field="accountHolder" header="Titular" />
+                <Column field="accountNumber" header="Cuenta" />
+                <Column
+                  body={(account: BankAccount) => (
+                    <Button
+                      icon="pi pi-trash"
+                      rounded
+                      text
+                      severity="danger"
+                      onClick={() => handleDeleteBankAccount(account.id)}
+                    />
+                  )}
+                  style={{ width: '3rem', textAlign: 'center' }}
+                />
+              </DataTable>
+            </Card>
+          </div>
+        )}
+
+        {/* Diálogo: Nueva Tasa de IVA */}
+        <Dialog
+          header="Nueva Tasa de IVA"
+          visible={showTaxRateDialog}
+          style={{ width: '90vw', maxWidth: '400px' }}
+          onHide={() => setShowTaxRateDialog(false)}
+          footer={
+            <div>
+              <Button label="Cancelar" icon="pi pi-times" onClick={() => setShowTaxRateDialog(false)} className="p-button-text" />
+              <Button label="Guardar" icon="pi pi-check" onClick={handleAddTaxRate} />
+            </div>
+          }
+        >
+          <div className="flex flex-column gap-3 mt-2">
+            <div className="flex flex-column gap-2">
+              <label htmlFor="taxRate" className="font-semibold">Porcentaje de IVA (%)</label>
+              <div className="p-inputgroup">
+                <InputNumber
+                  id="taxRate"
+                  value={newTaxRate}
+                  onValueChange={(e) => setNewTaxRate(e.value ?? 15)}
+                  min={0}
+                  max={30}
+                  showButtons
+                  suffix="%"
+                />
+              </div>
+            </div>
+            <span className="text-600 text-sm">
+              La nueva tasa entrará en vigor inmediatamente. Las tasas anteriores se conservan como historial.
+            </span>
+          </div>
+        </Dialog>
+
+        {/* Diálogo: Nueva Cuenta Bancaria */}
+        <Dialog
+          header="Nueva Cuenta Bancaria"
+          visible={showBankAccountDialog}
+          style={{ width: '90vw', maxWidth: '400px' }}
+          onHide={() => setShowBankAccountDialog(false)}
+          footer={
+            <div>
+              <Button label="Cancelar" icon="pi pi-times" onClick={() => setShowBankAccountDialog(false)} className="p-button-text" />
+              <Button label="Guardar" icon="pi pi-check" onClick={handleAddBankAccount} />
+            </div>
+          }
+        >
+          <div className="flex flex-column gap-3 mt-2">
+            <div className="flex flex-column gap-2">
+              <label htmlFor="bankName" className="font-semibold">Banco</label>
+              <input
+                id="bankName"
+                type="text"
+                value={bankAccountForm.bankName}
+                onChange={(e) => setBankAccountForm(prev => ({ ...prev, bankName: e.target.value }))}
+                placeholder="Ej. Banco Pichincha"
+                className="p-inputtext w-full"
+              />
+            </div>
+            <div className="flex flex-column gap-2">
+              <label htmlFor="accountHolder" className="font-semibold">Titular de la cuenta</label>
+              <input
+                id="accountHolder"
+                type="text"
+                value={bankAccountForm.accountHolder}
+                onChange={(e) => setBankAccountForm(prev => ({ ...prev, accountHolder: e.target.value }))}
+                placeholder="Ej. Juan Pérez"
+                className="p-inputtext w-full"
+              />
+            </div>
+            <div className="flex flex-column gap-2">
+              <label htmlFor="accountNumber" className="font-semibold">Número de cuenta</label>
+              <input
+                id="accountNumber"
+                type="text"
+                value={bankAccountForm.accountNumber}
+                onChange={(e) => setBankAccountForm(prev => ({ ...prev, accountNumber: e.target.value }))}
+                placeholder="Ej. 1234567890"
+                className="p-inputtext w-full"
+              />
+            </div>
+          </div>
+        </Dialog>
       </div>
 
       <CreateUserModal
@@ -281,6 +538,15 @@ const SettingsScreen: React.FC = () => {
         onClose={() => setIsCreateUserModalOpen(false)}
         onSuccess={handleCreateUserSuccess}
       />
+
+      <div className="fixed bottom-0 left-0 p-3 z-5">
+        <Button
+          label="Cerrar Sesión"
+          icon="pi pi-sign-out"
+          severity="danger"
+          onClick={handleLogout}
+        />
+      </div>
     </div>
   );
 };

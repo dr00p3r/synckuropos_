@@ -1,0 +1,22 @@
+ALTER TABLE "combo_products" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "combo_products" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "customers" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "customers" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "debt_payments" ALTER COLUMN "paymentDate" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "debt_payments" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "debt_payments" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "debts" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "debts" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "products" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "products" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "sale_items" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "sale_items" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "sales" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "sales" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "stock_movements" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "stock_movements" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "supplyings" ALTER COLUMN "supplyDate" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "supplyings" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "supplyings" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "users" ALTER COLUMN "createdAt" SET DATA TYPE bigint;--> statement-breakpoint
+ALTER TABLE "users" ALTER COLUMN "updatedAt" SET DATA TYPE bigint;

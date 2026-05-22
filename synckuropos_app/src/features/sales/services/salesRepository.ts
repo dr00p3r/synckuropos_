@@ -1,88 +1,111 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { SaleItem, SaleSummary, Customer, Sale, SaleDetail, Debt, DebtPayment } from '@/types/types';
+import type { SaleItem, SaleSummary, Customer } from '@/types/types';
+import type { AppDatabase } from '@/hooks/useDatabase';
+import * as schema from '@/db/schema';
 
 interface CreateSaleParams {
     userId: string;
     saleItems: SaleItem[];
     summary: SaleSummary;
     receivedAmount: number; // En centavos
-    isCredit: boolean;
+    paymentMethod: 'cash' | 'transfer' | 'credit';
     customer?: Customer;
 }
 
 export const salesRepository = {
     /**
-     * Crea una venta completa de forma atómica
+     * Crea una venta completa de forma atómica:
+     * 1. Inserta la cabecera de venta
+     * 2. Inserta los items de venta
+     * 3. Inserta movimientos de stock negativos (deltas)
+     * 4. Si es crédito, crea deuda y pago parcial si aplica
      */
-    async createSaleTransaction(db: any, params: CreateSaleParams): Promise<void> {
-        const { userId, saleItems, summary, receivedAmount, isCredit, customer } = params;
-        const TAX_RATE = 0.15; 
+    async createSaleTransaction(db: AppDatabase, params: CreateSaleParams): Promise<void> {
+        const { userId, saleItems, summary, receivedAmount, paymentMethod, customer } = params;
+        const taxRate = summary.taxRate;
+        const now = Date.now();
 
         // 1. Crear Cabecera de Venta
-        const sale: Sale = {
-            saleId: uuidv4(),
-            userId: userId,
-            customerId: customer?.customerId || 'CONSUMIDOR_FINAL',
+        const saleId = crypto.randomUUID();
+        await db.insert(schema.sales).values({
+            saleId,
+            userId,
+            customerId: customer?.customerId ?? '9999999999',
             totalAmount: Math.round(summary.total),
-            isActive: true,
+            paymentMethod,
             _deleted: false,
-            isPartOfDebt: isCredit,
             SRIStatus: 'pending',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-
-        await db.sales.insert(sale);
-
-        // 2. Crear Detalles
-        const detailsPromises = saleItems.map(item => {
-            // Calcular impuesto solo si el producto es gravable
-            const taxAmount = item.isTaxable ? (item.totalPrice * TAX_RATE) : 0;
-            
-            const saleDetail: SaleDetail = {
-                saleId: sale.saleId,
-                productId: item.productId,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                subtotal: item.totalPrice,
-                taxAmount: Math.round(taxAmount),
-                lineTotal: Math.round(item.totalPrice + taxAmount),
-                _deleted: false
-            };
-            return db.saleDetails.insert(saleDetail);
+            createdAt: now,
+            updatedAt: now,
+            synced: 0
         });
 
-        await Promise.all(detailsPromises);
+        // 2. Crear Detalles + Stock Movements
+        for (const item of saleItems) {
+            const baseAmount = item.isTaxable ? Math.round(item.totalPrice / (1 + taxRate)) : item.totalPrice;
+            const taxAmount = item.isTaxable ? (item.totalPrice - baseAmount) : 0;
+            const saleItemId = crypto.randomUUID();
+
+            await Promise.all([
+                db.insert(schema.saleItems).values({
+                    id: saleItemId,
+                    saleId,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    subtotal: baseAmount,
+                    taxAmount,
+                    lineTotal: item.totalPrice,
+                    _deleted: false,
+                    createdAt: now,
+                    updatedAt: now,
+                    synced: 0
+                }),
+                db.insert(schema.stockMovements).values({
+                    id: crypto.randomUUID(),
+                    productId: item.productId,
+                    delta: -item.quantity,
+                    reason: 'Venta',
+                    referenceId: saleId,
+                    referenceType: 'sale',
+                    _deleted: false,
+                    createdAt: now,
+                    updatedAt: now,
+                    synced: 0
+                })
+            ]);
+        }
 
         // 3. Manejo de Créditos y Deudas
-        if (isCredit && customer) {
+        if (paymentMethod === 'credit' && customer) {
             const totalSaleCents = Math.round(summary.total);
             const debtAmount = totalSaleCents - receivedAmount;
 
             if (debtAmount > 0) {
-                const debt: Debt = {
-                    debtId: uuidv4(),
+                const debtId = crypto.randomUUID();
+                await db.insert(schema.debts).values({
+                    debtId,
                     customerId: customer.customerId,
+                    saleId,
                     amount: debtAmount,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    _deleted: false
-                };
-                await db.debts.insert(debt);
+                    _deleted: false,
+                    createdAt: now,
+                    updatedAt: now,
+                    synced: 0
+                });
 
                 // Registrar el pago parcial si existe
                 if (receivedAmount > 0) {
-                    const payment: DebtPayment = {
-                        debtPaymentId: uuidv4(),
-                        debtId: debt.debtId,
-                        userId: userId,
+                    await db.insert(schema.debtPayments).values({
+                        debtPaymentId: crypto.randomUUID(),
+                        debtId,
+                        userId,
                         amountPaid: receivedAmount,
-                        paymentDate: new Date().toISOString(),
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        _deleted: false
-                    };
-                    await db.debtPayments.insert(payment);
+                        paymentDate: now,
+                        _deleted: false,
+                        createdAt: now,
+                        updatedAt: now,
+                        synced: 0
+                    });
                 }
             }
         }

@@ -3,18 +3,16 @@ import { useDatabase } from '../../../hooks/useDatabase';
 import { useToast } from '../../../hooks/useToast';
 import type { Product } from '../types';
 import type { AutoCompleteCompleteEvent } from 'primereact/autocomplete';
-import { useTelemetry } from '@/hooks/useTelemetry';
-import { TelemetryEvents } from '@/types/telemetryEvents';
+import { eq, and, like } from 'drizzle-orm';
+import * as schema from '@/db/schema';
 
 export const useProductSearch = () => {
     const [suggestions, setSuggestions] = useState<Product[]>([]);
     const db = useDatabase();
     const toast = useToast();
-    const { logMetric } = useTelemetry();
 
     const searchProducts = async (event: AutoCompleteCompleteEvent) => {
         const query = event.query.trim();
-        const startTime = performance.now();
 
         if (!query) {
             setSuggestions([]);
@@ -22,31 +20,18 @@ export const useProductSearch = () => {
         }
 
         try {
-            // regex para buscar por nombre O código
-            const results = await db.collections.products.find({
-                selector: {
-                    $and: [
-                        { _deleted: false },
-                        { isActive: true },
-                        {
-                            $or: [
-                                { code: { $regex: query, $options: 'i' } },
-                                { name: { $regex: query, $options: 'i' } }
-                            ]
-                        }
-                    ]
-                },
-                limit: 10
-            }).exec();
+            const results = await db
+                .select()
+                .from(schema.products)
+                .where(
+                    and(
+                        eq(schema.products._deleted, false),
+                        like(schema.products.name, `%${query}%`)
+                    )
+                )
+                .limit(10);
 
-            const durationMs = performance.now() - startTime;
-            
-            logMetric(TelemetryEvents.PERF_SEARCH_LATENCY, {
-                durationMs,
-                resultCount: results.length
-            });
-
-            setSuggestions(results);
+            setSuggestions(results as Product[]);
         } catch (error) {
             console.error('Error searching products:', error);
             toast.showError('Error al buscar productos');
@@ -56,15 +41,17 @@ export const useProductSearch = () => {
 
     const findExactByCode = async (code: string): Promise<Product | null> => {
         try {
-            const results = await db.collections.products.find({
-                selector: {
-                    $and: [
-                        { _deleted: false },
-                        { code: { $eq: code } } // Búsqueda exacta para escáner
-                    ]
-                }
-            }).exec();
-            return results.length > 0 ? results[0] : null;
+            const results = await db
+                .select()
+                .from(schema.products)
+                .where(
+                    and(
+                        eq(schema.products._deleted, false),
+                        eq(schema.products.code, code)
+                    )
+                )
+                .limit(1);
+            return (results[0] as Product) ?? null;
         } catch (error) {
             return null;
         }

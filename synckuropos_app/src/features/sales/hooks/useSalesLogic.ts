@@ -5,7 +5,6 @@ import type { Product, SaleSummary } from '../../../types/types';
 interface UseSalesLogicReturn {
   showPaymentView: boolean;
   setShowPaymentView: (show: boolean) => void;
-  taxRate: number;
   addProductToSale: (product: Product) => void;
   calculateSummary: () => SaleSummary;
   handleCompleteSale: () => void;
@@ -14,11 +13,7 @@ interface UseSalesLogicReturn {
 }
 
 export const useSalesLogic = (): UseSalesLogicReturn => {
-  // States
   const [showPaymentView, setShowPaymentView] = useState(false);
-
-  // Constants
-  const TAX_RATE = 0.15; // 15% IVA
 
   const toast = useToast();
   const { saleItems, addToCart, clearCart, calculateSummary } = useCart();
@@ -54,7 +49,6 @@ export const useSalesLogic = (): UseSalesLogicReturn => {
   return {
     showPaymentView,
     setShowPaymentView,
-    taxRate: TAX_RATE,
     addProductToSale,
     calculateSummary,
     handleCompleteSale,

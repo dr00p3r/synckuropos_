@@ -1,5 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
+import { eq, and, inArray } from 'drizzle-orm';
 import type { Customer, Debt, DebtPayment } from '@/types/types';
+import type { AppDatabase } from '@/hooks/useDatabase';
+import * as schema from '@/db/schema';
 
 export interface CustomerWithDebt extends Customer {
     debtTotal: number;
@@ -39,124 +41,133 @@ export const customerRepository = {
     // CUSTOMERS CRUD
     // ============================================
 
-    /**
-     * Obtiene todos los clientes con su deuda calculada
-     * @param onlyActive - Si true, solo devuelve clientes activos (default: false)
-     */
-    async getCustomersWithDebt(db: any, onlyActive = false): Promise<CustomerWithDebt[]> {
-        const selector: any = { _deleted: false };
-        
-        if (onlyActive) {
-            selector.isActive = true;
+    async getCustomersWithDebt(db: AppDatabase): Promise<CustomerWithDebt[]> {
+        const customers = await db
+            .select()
+            .from(schema.customers)
+            .where(eq(schema.customers._deleted, false));
+
+        if (customers.length === 0) return [];
+
+        const customerIds = customers.map(c => c.customerId);
+
+        const allDebts = await db
+            .select()
+            .from(schema.debts)
+            .where(
+                and(
+                    inArray(schema.debts.customerId, customerIds),
+                    eq(schema.debts._deleted, false)
+                )
+            );
+
+        const debtIds = allDebts.map(d => d.debtId);
+
+        let paymentsByDebt = new Map<string, number>();
+        if (debtIds.length > 0) {
+            const allPayments = await db
+                .select()
+                .from(schema.debtPayments)
+                .where(
+                    and(
+                        inArray(schema.debtPayments.debtId, debtIds),
+                        eq(schema.debtPayments._deleted, false)
+                    )
+                );
+
+            for (const p of allPayments) {
+                const prev = paymentsByDebt.get(p.debtId) ?? 0;
+                paymentsByDebt.set(p.debtId, prev + p.amountPaid);
+            }
         }
 
-        const customers = await db.customers.find({ selector }).exec();
-        const customersData = customers.map((doc: any) => doc.toJSON());
+        const debtByCustomer = new Map<string, number>();
+        for (const debt of allDebts) {
+            const totalPaid = paymentsByDebt.get(debt.debtId) ?? 0;
+            const pending = debt.amount - totalPaid;
+            if (pending > 0) {
+                const prev = debtByCustomer.get(debt.customerId) ?? 0;
+                debtByCustomer.set(debt.customerId, prev + pending);
+            }
+        }
 
-        // Calcular deuda de cada cliente en paralelo
-        const customersWithDebt = await Promise.all(
-            customersData.map(async (customer: Customer) => {
-                const debtTotal = await this.calculateCustomerDebt(db, customer.customerId);
-                return { ...customer, debtTotal };
-            })
-        );
-
-        return customersWithDebt;
+        return customers.map(customer => ({
+            ...customer,
+            debtTotal: debtByCustomer.get(customer.customerId) ?? 0
+        }));
     },
 
-    /**
-     * Obtiene un cliente por ID
-     */
-    async getCustomerById(db: any, customerId: string): Promise<Customer | null> {
-        const doc = await db.customers.findOne({
-            selector: { customerId }
-        }).exec();
-
-        return doc ? doc.toJSON() : null;
+    async getCustomerById(db: AppDatabase, customerId: string): Promise<Customer | null> {
+        const rows = await db
+            .select()
+            .from(schema.customers)
+            .where(eq(schema.customers.customerId, customerId))
+            .limit(1);
+        return (rows[0] as Customer) ?? null;
     },
 
-    /**
-     * Crea un nuevo cliente
-     */
-    async createCustomer(db: any, data: CreateCustomerData): Promise<Customer> {
-        const customerId = uuidv4();
-        const now = new Date().toISOString();
-
+    async createCustomer(db: AppDatabase, data: CreateCustomerData): Promise<Customer> {
+        const now = Date.now();
         const newCustomer: Customer = {
-            customerId,
+            customerId: crypto.randomUUID(),
             fullname: data.fullname.trim(),
-            phone: data.phone?.trim() || undefined,
-            email: data.email?.trim() || undefined,
-            address: data.address?.trim() || undefined,
+            phone: data.phone?.trim() || null,
+            email: data.email?.trim() || null,
+            address: data.address?.trim() || null,
             allowCredit: data.allowCredit,
-            creditLimit: Math.round(data.creditLimit * 100), // Convertir a centavos
-            isActive: true,
+            creditLimit: Math.round(data.creditLimit * 100),
             _deleted: false,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            synced: 0
         };
 
-        await db.customers.insert(newCustomer);
+        await db.insert(schema.customers).values(newCustomer);
         return newCustomer;
     },
 
-    /**
-     * Actualiza un cliente existente
-     */
-    async updateCustomer(db: any, customerId: string, data: UpdateCustomerData): Promise<void> {
-        const doc = await db.customers.findOne({
-            selector: { customerId }
-        }).exec();
+    async updateCustomer(db: AppDatabase, customerId: string, data: UpdateCustomerData): Promise<void> {
+        const row = await db
+            .select()
+            .from(schema.customers)
+            .where(eq(schema.customers.customerId, customerId))
+            .limit(1);
 
-        if (!doc) {
+        if (row.length === 0) {
             throw new Error('Cliente no encontrado');
         }
 
-        const updateData: any = {
-            updatedAt: new Date().toISOString()
+        const updateData: Partial<Customer> & { updatedAt: number } = {
+            updatedAt: Date.now()
         };
 
-        if (data.fullname !== undefined) {
-            updateData.fullname = data.fullname.trim();
-        }
-        if (data.phone !== undefined) {
-            updateData.phone = data.phone?.trim() || undefined;
-        }
-        if (data.email !== undefined) {
-            updateData.email = data.email?.trim() || undefined;
-        }
-        if (data.address !== undefined) {
-            updateData.address = data.address?.trim() || undefined;
-        }
-        if (data.allowCredit !== undefined) {
-            updateData.allowCredit = data.allowCredit;
-        }
-        if (data.creditLimit !== undefined) {
-            updateData.creditLimit = Math.round(data.creditLimit * 100);
-        }
+        if (data.fullname !== undefined) updateData.fullname = data.fullname.trim();
+        if (data.phone !== undefined) updateData.phone = data.phone?.trim() || null;
+        if (data.email !== undefined) updateData.email = data.email?.trim() || null;
+        if (data.address !== undefined) updateData.address = data.address?.trim() || null;
+        if (data.allowCredit !== undefined) updateData.allowCredit = data.allowCredit;
+        if (data.creditLimit !== undefined) updateData.creditLimit = Math.round(data.creditLimit * 100);
 
-        await doc.update({ $set: updateData });
+        await db
+            .update(schema.customers)
+            .set(updateData)
+            .where(eq(schema.customers.customerId, customerId));
     },
 
-    /**
-     * Desactiva/Reactiva un cliente (soft delete)
-     */
-    async toggleCustomerStatus(db: any, customerId: string): Promise<boolean> {
-        const doc = await db.customers.findOne({
-            selector: { customerId }
-        }).exec();
+    async toggleCustomerStatus(db: AppDatabase, customerId: string): Promise<boolean> {
+        const rows = await db
+            .select({ _deleted: schema.customers._deleted })
+            .from(schema.customers)
+            .where(eq(schema.customers.customerId, customerId))
+            .limit(1);
 
-        if (!doc) {
-            throw new Error('Cliente no encontrado');
-        }
+        if (rows.length === 0) throw new Error('Cliente no encontrado');
 
-        const newStatus = !doc.toJSON().isActive;
-        await doc.update({
-            $set: {
-                isActive: newStatus,
-                updatedAt: new Date().toISOString()
-            }
-        });
+        const newStatus = !rows[0]._deleted;
+        await db
+            .update(schema.customers)
+            .set({ _deleted: newStatus, updatedAt: Date.now() })
+            .where(eq(schema.customers.customerId, customerId));
 
         return newStatus;
     },
@@ -165,74 +176,87 @@ export const customerRepository = {
     // DEBT CALCULATIONS
     // ============================================
 
-    /**
-     * Calcula la deuda total de un cliente
-     */
-    async calculateCustomerDebt(db: any, customerId: string): Promise<number> {
-        try {
-            const debts = await db.debts.find({
-                selector: { customerId, _deleted: false }
-            }).exec();
+    async calculateCustomerDebt(db: AppDatabase, customerId: string): Promise<number> {
+        const debts = await db
+            .select()
+            .from(schema.debts)
+            .where(
+                and(
+                    eq(schema.debts.customerId, customerId),
+                    eq(schema.debts._deleted, false)
+                )
+            );
 
-            if (debts.length === 0) return 0;
+        if (debts.length === 0) return 0;
 
-            let totalDebt = 0;
+        const debtIds = debts.map(d => d.debtId);
+        const allPayments = await db
+            .select()
+            .from(schema.debtPayments)
+            .where(
+                and(
+                    inArray(schema.debtPayments.debtId, debtIds),
+                    eq(schema.debtPayments._deleted, false)
+                )
+            );
 
-            for (const debt of debts) {
-                const debtData = debt.toJSON();
-                
-                const payments = await db.debtPayments.find({
-                    selector: { debtId: debtData.debtId, _deleted: false }
-                }).exec();
-
-                const totalPaid = payments.reduce((sum: number, payment: any) => {
-                    return sum + payment.toJSON().amountPaid;
-                }, 0);
-
-                const pendingAmount = debtData.amount - totalPaid;
-                
-                if (pendingAmount > 0) {
-                    totalDebt += pendingAmount;
-                }
-            }
-
-            return totalDebt;
-        } catch (error) {
-            console.error('Error calculando deuda del cliente:', error);
-            return 0;
+        const paidByDebt = new Map<string, number>();
+        for (const p of allPayments) {
+            paidByDebt.set(p.debtId, (paidByDebt.get(p.debtId) ?? 0) + p.amountPaid);
         }
+
+        let totalDebt = 0;
+        for (const debt of debts) {
+            const totalPaid = paidByDebt.get(debt.debtId) ?? 0;
+            const pendingAmount = debt.amount - totalPaid;
+            if (pendingAmount > 0) {
+                totalDebt += pendingAmount;
+            }
+        }
+
+        return totalDebt;
     },
 
-    /**
-     * Obtiene el resumen de deudas de un cliente con detalle de pagos
-     */
-    async getCustomerDebtSummary(db: any, customerId: string): Promise<CustomerDebtSummary> {
-        const debts = await db.debts.find({
-            selector: { customerId, _deleted: false }
-        }).exec();
+    async getCustomerDebtSummary(db: AppDatabase, customerId: string): Promise<CustomerDebtSummary> {
+        const debts = await db
+            .select()
+            .from(schema.debts)
+            .where(
+                and(
+                    eq(schema.debts.customerId, customerId),
+                    eq(schema.debts._deleted, false)
+                )
+            );
 
-        const debtsWithPayments: DebtWithPayments[] = await Promise.all(
-            debts.map(async (debtDoc: any) => {
-                const debt = debtDoc.toJSON() as Debt;
-                
-                const paymentDocs = await db.debtPayments.find({
-                    selector: { debtId: debt.debtId, _deleted: false }
-                }).exec();
+        if (debts.length === 0) {
+            return { totalDebt: 0, debtsCount: 0, debts: [] };
+        }
 
-                const payments = paymentDocs.map((p: any) => p.toJSON() as DebtPayment);
-                const totalPaid = payments.reduce((sum: number, p: DebtPayment) => sum + p.amountPaid, 0);
-                const pendingAmount = Math.max(0, debt.amount - totalPaid);
+        const debtIds = debts.map(d => d.debtId);
+        const allPaymentRows = await db
+            .select()
+            .from(schema.debtPayments)
+            .where(
+                and(
+                    inArray(schema.debtPayments.debtId, debtIds),
+                    eq(schema.debtPayments._deleted, false)
+                )
+            );
 
-                return {
-                    ...debt,
-                    totalPaid,
-                    pendingAmount,
-                    payments
-                };
-            })
-        );
+        const paymentsByDebt = new Map<string, DebtPayment[]>();
+        for (const p of allPaymentRows) {
+            const list = paymentsByDebt.get(p.debtId) ?? [];
+            list.push(p as DebtPayment);
+            paymentsByDebt.set(p.debtId, list);
+        }
 
-        // Filtrar solo deudas con saldo pendiente
+        const debtsWithPayments: DebtWithPayments[] = debts.map(debt => {
+            const payments = paymentsByDebt.get(debt.debtId) ?? [];
+            const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+            const pendingAmount = Math.max(0, debt.amount - totalPaid);
+            return { ...debt, totalPaid, pendingAmount, payments };
+        });
+
         const activeDebts = debtsWithPayments.filter(d => d.pendingAmount > 0);
         const totalDebt = activeDebts.reduce((sum, d) => sum + d.pendingAmount, 0);
 
@@ -247,30 +271,25 @@ export const customerRepository = {
     // DEBT PAYMENTS
     // ============================================
 
-    /**
-     * Registra un pago a la deuda del cliente
-     * Distribuye el pago entre las deudas más antiguas primero (FIFO)
-     */
     async registerPayment(
-        db: any, 
-        customerId: string, 
-        amountInDollars: number, 
+        db: AppDatabase,
+        customerId: string,
+        amountInDollars: number,
         userId: string
     ): Promise<{ paymentsCreated: number; totalApplied: number }> {
         const summary = await this.getCustomerDebtSummary(db, customerId);
-        
+
         if (summary.debts.length === 0) {
             throw new Error('El cliente no tiene deudas pendientes');
         }
 
-        let remainingAmount = Math.round(amountInDollars * 100); // Convertir a centavos
-        const now = new Date().toISOString();
+        let remainingAmount = Math.round(amountInDollars * 100);
+        const now = Date.now();
         let paymentsCreated = 0;
         let totalApplied = 0;
 
-        // Ordenar deudas por fecha de creación (más antiguas primero)
         const sortedDebts = [...summary.debts].sort(
-            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            (a, b) => a.createdAt - b.createdAt
         );
 
         for (const debt of sortedDebts) {
@@ -279,15 +298,16 @@ export const customerRepository = {
             const amountToApply = Math.min(remainingAmount, debt.pendingAmount);
 
             if (amountToApply > 0) {
-                await db.debtPayments.insert({
-                    debtPaymentId: uuidv4(),
+                await db.insert(schema.debtPayments).values({
+                    debtPaymentId: crypto.randomUUID(),
                     debtId: debt.debtId,
                     userId,
                     amountPaid: amountToApply,
                     paymentDate: now,
                     _deleted: false,
                     createdAt: now,
-                    updatedAt: now
+                    updatedAt: now,
+                    synced: 0
                 });
 
                 remainingAmount -= amountToApply;
@@ -299,36 +319,30 @@ export const customerRepository = {
         return { paymentsCreated, totalApplied };
     },
 
-    /**
-     * Crea una nueva deuda para un cliente (usado cuando se vende a crédito)
-     */
-    async createDebt(db: any, customerId: string, amountInCents: number): Promise<Debt> {
-        const now = new Date().toISOString();
-        
+    async createDebt(db: AppDatabase, customerId: string, amountInCents: number): Promise<Debt> {
+        const now = Date.now();
         const newDebt: Debt = {
-            debtId: uuidv4(),
+            debtId: crypto.randomUUID(),
             customerId,
             amount: amountInCents,
             _deleted: false,
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            synced: 0
         };
 
-        await db.debts.insert(newDebt);
+        await db.insert(schema.debts).values(newDebt);
         return newDebt;
     },
 
-    /**
-     * Verifica si un cliente puede recibir más crédito
-     */
-    async canReceiveCredit(db: any, customerId: string, additionalAmount: number): Promise<{
+    async canReceiveCredit(db: AppDatabase, customerId: string, additionalAmount: number): Promise<{
         canReceive: boolean;
         currentDebt: number;
         creditLimit: number;
         availableCredit: number;
     }> {
         const customer = await this.getCustomerById(db, customerId);
-        
+
         if (!customer) {
             throw new Error('Cliente no encontrado');
         }

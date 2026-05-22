@@ -3,6 +3,7 @@ import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
 import type { SaleSummary } from '../../../types/types';
 import { formatCurrency } from '../../../utils/formatters';
+import { PageCard } from '@/components/common/PageCard';
 
 interface SalesSummaryProps {
     summary: SaleSummary;
@@ -13,7 +14,7 @@ interface SalesSummaryProps {
 export const SalesSummary: React.FC<SalesSummaryProps> = ({ summary, onPaymentClick, itemCount }) => {
 
     return (
-        <div className="card bg-white shadow-2 border-round-xl p-4 h-full flex flex-column justify-content-between">
+        <PageCard shadow="1" variant="white" padding="4" className="h-full flex flex-column justify-content-between">
             <div>
                 <h2 className="text-xl font-bold m-0 mb-3 text-900">Resumen</h2>
                 
@@ -28,7 +29,7 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ summary, onPaymentCl
                 </div>
                 
                 <div className="flex justify-content-between mb-2">
-                    <span className="text-600">IVA (15%)</span>
+                    <span className="text-600">IVA ({(summary.taxRate * 100).toFixed(0)}%)</span>
                     <span className="font-medium text-900">{formatCurrency(summary.tax)}</span>
                 </div>
 
@@ -47,6 +48,6 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ summary, onPaymentCl
                 onClick={onPaymentClick}
                 disabled={itemCount === 0}
             />
-        </div>
+        </PageCard>
     );
 };

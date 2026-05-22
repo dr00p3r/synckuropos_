@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useDatabase } from '../../../hooks/useDatabase';
-import { useToast, useAuth, useCart } from '@/hooks';
+import { useToast, useAuth } from '@/hooks';
 import { salesRepository } from '../services/salesRepository';
-import type { Customer, SaleItem, SaleSummary } from '@/types/types';
-import { useTelemetry } from '@/hooks/useTelemetry';
-import { TelemetryEvents } from '@/types/telemetryEvents';
+import { customerRepository } from '../../customers/services/customerRepository';
+import type { Customer, SaleItem, SaleSummary, BankAccount } from '@/types/types';
+import { eq } from 'drizzle-orm';
+import * as schema from '@/db/schema';
+
+export type PaymentMethod = 'cash' | 'transfer' | 'credit';
 
 interface UsePaymentLogicProps {
     saleItems: SaleItem[];
@@ -15,22 +18,30 @@ interface UsePaymentLogicProps {
 export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaymentLogicProps) => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
     const [receivedAmount, setReceivedAmount] = useState<string>('');
-    const [isCredit, setIsCredit] = useState(false);
     const [processingPayment, setProcessingPayment] = useState(false);
+    const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+    const [customerDebt, setCustomerDebt] = useState(0);
 
     const db = useDatabase();
     const toast = useToast();
     const { currentUser } = useAuth();
-    const { logMetric } = useTelemetry();
-    const { saleStartTime } = useCart();
 
+    const customersLoaded = useRef(false);
+    const bankAccountsLoaded = useRef(false);
+
+    // Cargar clientes
     useEffect(() => {
+        if (customersLoaded.current) return;
         const loadCustomers = async () => {
             try {
-                // Optimización: Solo traer campos necesarios si son muchos clientes
-                const allCustomers = await db.customers.find({ selector: { isActive: true } }).exec();
-                setCustomers(allCustomers.map((doc: any) => doc.toJSON()));
+                const allCustomers = await db
+                    .select()
+                    .from(schema.customers)
+                    .where(eq(schema.customers._deleted, false));
+                setCustomers(allCustomers as Customer[]);
+                customersLoaded.current = true;
             } catch (error) {
                 console.error('Error loading customers:', error);
             }
@@ -38,50 +49,93 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
         loadCustomers();
     }, [db]);
 
+    // Cargar cuentas bancarias
+    useEffect(() => {
+        if (bankAccountsLoaded.current) return;
+        const loadBankAccounts = async () => {
+            try {
+                const accounts = await db
+                    .select()
+                    .from(schema.bankAccounts)
+                    .where(eq(schema.bankAccounts._deleted, false));
+                setBankAccounts(accounts as BankAccount[]);
+                bankAccountsLoaded.current = true;
+            } catch (error) {
+                console.error('Error loading bank accounts:', error);
+            }
+        };
+        loadBankAccounts();
+    }, [db]);
+
     const selectedCustomer = customers.find(c => c.customerId === selectedCustomerId);
 
+    // Si el método es crédito y el cliente no tiene crédito habilitado, cambiar a efectivo
+    useEffect(() => {
+        if (paymentMethod === 'credit' && selectedCustomer && !selectedCustomer.allowCredit) {
+            setPaymentMethod('cash');
+            setReceivedAmount('');
+        }
+    }, [selectedCustomer, paymentMethod]);
+
+    // Calcular deuda del cliente seleccionado
+    useEffect(() => {
+        if (!selectedCustomerId) {
+            setCustomerDebt(0);
+            return;
+        }
+        const loadDebt = async () => {
+            try {
+                const debt = await customerRepository.calculateCustomerDebt(db, selectedCustomerId);
+                setCustomerDebt(debt);
+            } catch {
+                setCustomerDebt(0);
+            }
+        };
+        loadDebt();
+    }, [selectedCustomerId, db]);
+
     const receivedCents = Math.round(parseFloat(receivedAmount || '0') * 100);
-    const changeAmount = receivedCents - summary.total;
+    const changeAmount = paymentMethod === 'cash' ? receivedCents - summary.total : 0;
+
+    const creditLimit = selectedCustomer?.creditLimit ?? 0;
+    const availableCredit = creditLimit - customerDebt;
+    const creditExceeded = paymentMethod === 'credit' && summary.total > availableCredit;
+
+    const isConfirmDisabled = useMemo(() => {
+        if (saleItems.length === 0) return true;
+        if (paymentMethod === 'cash') return receivedCents < summary.total;
+        if (paymentMethod === 'credit') {
+            if (!selectedCustomer) return true;
+            if (!selectedCustomer.allowCredit) return true;
+            return creditExceeded;
+        }
+        return false;
+    }, [saleItems.length, paymentMethod, receivedCents, summary.total, selectedCustomer, creditExceeded]);
+
+    const setQuickAmount = useCallback((amount: number) => {
+        setReceivedAmount(amount.toFixed(2));
+    }, []);
 
     const handleConfirmPurchase = async () => {
         if (saleItems.length === 0) return toast.showWarn('Carrito vacío');
         if (!currentUser) return toast.showError('Sesión inválida');
 
-        if (!isCredit && receivedCents < summary.total) {
-            logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'payment-form', errorCount: 1, reason: 'insufficient_amount' });
+        if (paymentMethod === 'cash' && receivedCents < summary.total) {
             return toast.showError('Monto insuficiente');
         }
-        if (isCredit) {
+        if (paymentMethod === 'credit') {
             if (!selectedCustomer) {
-                logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'payment-form', errorCount: 1, reason: 'no_customer_selected' });
                 return toast.showError('Seleccione un cliente para fiar');
             }
             if (!selectedCustomer.allowCredit) {
-                logMetric(TelemetryEvents.UX_FORM_BLOCK, { formId: 'payment-form', errorCount: 1, reason: 'credit_not_allowed' });
                 return toast.showError('Cliente sin crédito habilitado');
+            }
+            if (creditExceeded) {
+                return toast.showError('La venta supera el crédito disponible del cliente');
             }
         }
 
         setProcessingPayment(true);
-        const startTime = performance.now();
-
-        const integrityTotal = saleItems.reduce((acc, item) => {
-            return acc + item.totalPrice + (item.isTaxable ? Math.round(item.totalPrice * 0.15) : 0);
-        }, 0);
-
-        // Wait, summary.total is in cents?
-        // Let's allow a small epsilon if dealing with old floating point legacy, but intent is strictly integer match.
-        const diff = integrityTotal - summary.total;
-
-        logMetric(TelemetryEvents.FINANCIAL_INTEGRITY_CHECK, {
-            diff,
-            totalRegistered: summary.total,
-            totalCalculated: integrityTotal
-        });
-
-        if (diff !== 0) {
-            console.error('[Financial Integrity] Mismatch detected!', diff);
-        }
 
         try {
             await salesRepository.createSaleTransaction(db, {
@@ -89,34 +143,18 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
                 saleItems,
                 summary,
                 receivedAmount: receivedCents,
-                isCredit,
+                paymentMethod,
                 customer: selectedCustomer
             });
 
-            const durationMs = performance.now() - startTime;
-            logMetric(TelemetryEvents.PERF_WRITE_LATENCY, {
-                durationMs,
-                itemsCount: saleItems.length
-            });
-
-            // Feedback y Limpieza
-            const msg = isCredit
+            const msg = paymentMethod === 'credit'
                 ? `Crédito registrado.`
+                : paymentMethod === 'transfer'
+                ? `Venta por transferencia registrada.`
                 : `Venta exitosa. Cambio: $${(changeAmount / 100).toFixed(2)}`;
 
             toast.showSuccess(msg);
-
-            // Task Duration (Metrics)
-            if (saleStartTime) {
-                const durationSeconds = (performance.now() - saleStartTime) / 1000;
-                logMetric(TelemetryEvents.TASK_DURATION, {
-                    taskName: 'SALE_PROCESS',
-                    durationSeconds
-                });
-            }
-
             onSaleCompleted();
-
         } catch (error) {
             console.error('Transaction failed:', error);
             toast.showError('Error al guardar la venta');
@@ -129,13 +167,19 @@ export const usePaymentLogic = ({ saleItems, summary, onSaleCompleted }: UsePaym
         customers,
         selectedCustomerId,
         setSelectedCustomerId,
+        paymentMethod,
+        setPaymentMethod,
         receivedAmount,
         setReceivedAmount,
-        isCredit,
-        setIsCredit,
+        setQuickAmount,
         processingPayment,
         selectedCustomer,
         changeAmount,
+        bankAccounts,
+        customerDebt,
+        availableCredit,
+        creditExceeded,
+        isConfirmDisabled,
         handleConfirmPurchase
     };
 };

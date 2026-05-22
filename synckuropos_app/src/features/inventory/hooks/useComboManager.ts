@@ -11,7 +11,7 @@ interface Combo {
     productId: string;
     comboQuantity: number;
     comboPrice: number;
-    isActive: boolean;
+    _deleted: boolean;
 }
 
 export const useComboManager = ({ productId }: UseComboManagerProps) => {
@@ -23,44 +23,24 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
     const [price, setPrice] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Cargar combos con suscripción
-    useEffect(() => {
-        // Validación temprana - no hacer nada si no hay db o productId
+    const loadCombos = useCallback(async () => {
         if (!db || !productId) {
             setCombos([]);
             return;
         }
-
-        let subscription: any = null;
-
         try {
-            const query = productRepository.getCombosByProduct(db, productId);
-            
-            // Verificar que la query es válida antes de suscribirse
-            if (query?.$) {
-                subscription = query.$.subscribe({
-                    next: (docs: any[]) => {
-                        setCombos(docs.map((d: any) => d.toJSON()));
-                    },
-                    error: (err: Error) => {
-                        console.error('Error en suscripción de combos:', err);
-                        setCombos([]);
-                    }
-                });
-            }
+            const rows = await productRepository.getCombosByProduct(db, productId);
+            setCombos(rows as Combo[]);
         } catch (error) {
-            console.error('Error al configurar suscripción de combos:', error);
+            console.error('Error loading combos:', error);
             setCombos([]);
         }
-
-        return () => {
-            if (subscription) {
-                subscription.unsubscribe();
-            }
-        };
     }, [db, productId]);
 
-    // Agregar combo
+    useEffect(() => {
+        loadCombos();
+    }, [loadCombos]);
+
     const handleAdd = useCallback(async () => {
         if (!qty || !price || !db || !productId) return;
 
@@ -70,9 +50,9 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
             setQty(null);
             setPrice(null);
             toast.showSuccess('Combo agregado');
+            await loadCombos();
         } catch (e: any) {
             console.error('Error al agregar combo:', e);
-            // Mostrar mensaje específico si es error de duplicado
             if (e.message?.includes('Ya existe un combo')) {
                 toast.showError(e.message);
             } else {
@@ -81,22 +61,21 @@ export const useComboManager = ({ productId }: UseComboManagerProps) => {
         } finally {
             setLoading(false);
         }
-    }, [qty, price, db, productId, toast]);
+    }, [qty, price, db, productId, toast, loadCombos]);
 
-    // Eliminar combo
     const handleDelete = useCallback(async (comboId: string) => {
         if (!db) return;
 
         try {
             await productRepository.deleteCombo(db, comboId);
             toast.showSuccess('Combo eliminado');
+            await loadCombos();
         } catch (e) {
             console.error('Error al eliminar combo:', e);
             toast.showError('Error al eliminar');
         }
-    }, [db, toast]);
+    }, [db, toast, loadCombos]);
 
-    // Reset form
     const resetForm = useCallback(() => {
         setQty(null);
         setPrice(null);

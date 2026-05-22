@@ -1,64 +1,76 @@
-import type {
-    Sale,
-    SaleDetail,
-
-    SaleWithDetails,
-    UserOption
-} from '../types';
+import { eq, and, between, inArray, desc } from 'drizzle-orm';
+import type { Sale, SaleDetail } from '@/types/types';
+import type { AppDatabase } from '@/hooks/useDatabase';
+import type { SaleWithDetails, UserOption } from '../types';
+import * as schema from '@/db/schema';
 
 export const reportRepository = {
-    async getUsers(db: any): Promise<UserOption[]> {
-        const users = await db.users.find().exec();
-        return users.map((u: any) => ({
+    async getUsers(db: AppDatabase): Promise<UserOption[]> {
+        const users = await db
+            .select()
+            .from(schema.users)
+            .where(eq(schema.users._deleted, false));
+
+        return users.map((u) => ({
             label: u.username,
             value: u.userId
         }));
     },
 
     async getSalesWithDetails(
-        db: any,
+        db: AppDatabase,
         startDate: Date,
         endDate: Date,
         userId?: string
     ): Promise<SaleWithDetails[]> {
-        const startISO = startDate.toISOString();
-        const endISO = endDate.toISOString();
+        const startMs = startDate.getTime();
+        const endMs = endDate.getTime();
 
-        const selector: any = {
-            isActive: true,
-            createdAt: { $gte: startISO, $lte: endISO }
-        };
-        if (userId) selector.userId = userId;
+        const conditions = [
+            eq(schema.sales._deleted, false),
+            between(schema.sales.createdAt, startMs, endMs)
+        ];
+        if (userId) {
+            conditions.push(eq(schema.sales.userId, userId));
+        }
 
-        const salesDocs = await db.sales.find({ selector }).sort({ createdAt: 'desc' }).exec();
-        const sales: Sale[] = salesDocs.map((d: any) => d.toJSON());
+        const salesRows = await db
+            .select()
+            .from(schema.sales)
+            .where(and(...conditions))
+            .orderBy(desc(schema.sales.createdAt));
 
+        const sales = salesRows as Sale[];
         if (sales.length === 0) return [];
 
         const saleIds = sales.map(s => s.saleId);
 
-        const detailsDocs = await db.saleDetails.find({
-            selector: {
-                saleId: { $in: saleIds }
-            }
-        }).exec();
-        const allDetails: SaleDetail[] = detailsDocs.map((d: any) => d.toJSON());
+        const detailsRows = await db
+            .select()
+            .from(schema.saleItems)
+            .where(inArray(schema.saleItems.saleId, saleIds));
+
+        const allDetails = detailsRows as SaleDetail[];
+
+        const detailsBySale = new Map<string, SaleDetail[]>();
+        for (const d of allDetails) {
+            const list = detailsBySale.get(d.saleId) ?? [];
+            list.push(d);
+            detailsBySale.set(d.saleId, list);
+        }
 
         const productIds = [...new Set(allDetails.map(d => d.productId))];
-        const productsDocs = await db.products.find({
-            selector: {
-                productId: { $in: productIds }
-            }
-        }).exec();
+        const productRows = await db
+            .select()
+            .from(schema.products)
+            .where(inArray(schema.products.productId, productIds));
 
         const productMap = new Map<string, string>();
-        productsDocs.forEach((p: any) => productMap.set(p.productId, p.name));
+        productRows.forEach((p) => productMap.set(p.productId, p.name));
 
         return sales.map(sale => {
-            // Filtrar detalles de esta venta
-            const myDetails = allDetails.filter(d => d.saleId === sale.saleId);
+            const myDetails = detailsBySale.get(sale.saleId) ?? [];
 
-            // Enriquecer detalle con nombre de producto
             const enrichedDetails = myDetails.map(detail => ({
                 ...detail,
                 productName: productMap.get(detail.productId) || 'Producto Desconocido'

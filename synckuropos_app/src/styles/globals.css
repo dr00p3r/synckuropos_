@@ -1,12 +1,29 @@
 /* Importar una fuente moderna (Inter es excelente para números y tablas) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+
 :root {
     font-family: 'Inter', var(--font-family);
     font-size: 14px; 
     --surface-ground: #f8f9fa;
-}
 
+    /* Colores semánticos de la app */
+    --color-brand: #2A423E;
+    --color-brand-dark: #1a2d2a;
+    --color-brand-light: #F0EFE7;
+    --color-success: #10B981;
+    --color-success-light: #ECFDF5;
+    --color-danger: #EF4444;
+    --color-danger-light: #FEF2F2;
+    --color-warning: #F59E0B;
+    --color-warning-light: #FFFBEB;
+    --color-info: #3b82f6;
+    --color-info-light: #EEF2FF;
+
+    /* Gráficos */
+    --chart-tick-color: #64748b;
+    --chart-grid-color: #e2e8f0;
+}
+
 body {
     background-color: var(--surface-ground);
     color: var(--text-color);
@@ -14,23 +31,71 @@ body {
     padding: 0;
     -webkit-font-smoothing: antialiased;
 }
-
+
 .p-inputtext {
     border-radius: 8px;
     padding: 0.75rem;
 }
-
+
 .p-button {
     border-radius: 8px;
     font-weight: 600;
 }
-
+
 /* Utilidad para quitar el borde focus azul por defecto y usar el del tema */
 :focus-visible {
     outline: none;
 }
-
+
 .p-highlight {
     color: #ffffff !important;
     background-color: var(--primary-color) !important;
+}
+
+.p-inputswitch {
+    border-radius: 30px !important;
+    overflow: hidden !important;
+}
+
+.p-inputswitch .p-inputswitch-slider::before {
+    border-radius: 50%;
+}
+
+.p-inputswitch .p-inputswitch-slider {
+    border-radius: 30px !important;
+}
+
+.p-inputswitch .p-inputswitch-slider::before {
+    border-radius: 50% !important;
+}
+
+
+/* KPI Card hover y borde izquierdo (ReportsScreen) */
+.kpi-card {
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+    background-color: var(--surface-100, #f1f3f5);
+}
+
+
+/* Scroll container flex pattern (reutilizable) */
+.flex-scroll-container {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Respect user preference for reduced motion (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

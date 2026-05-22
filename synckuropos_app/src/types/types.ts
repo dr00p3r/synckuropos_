@@ -1,26 +1,32 @@
+// ============================================
+// ENTIDADES DE BASE DE DATOS (SQLite/Drizzle)
+// Timestamps: Unix ms (number)
+// Soft delete: _deleted (false = activo, true = borrado)
+// Campos opcionales: string | null (Drizzle devuelve null, no undefined)
+// ============================================
+
 export interface User {
     userId: string;
     username: string;
     passwordHash: string;
     role: 'admin' | 'cajero';
-    isActive: boolean;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface Product {
     productId: string;
-    code: string | undefined;
+    code: string | null;
     name: string;
-    stock: number;
     basePrice: number;
     isTaxable: boolean;
     allowDecimalQuantity: boolean;
-    isActive: boolean;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface ComboProduct {
@@ -28,25 +34,25 @@ export interface ComboProduct {
     productId: string;
     comboQuantity: number;
     comboPrice: number;
-    isActive: boolean;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface Supplying {
     supplyingId: string;
-    userId: string;
-    supplierName: string;
+    userId: string | null;
+    supplierName: string | null;
     productId: string;
     unitCost: number;
     quantity: number;
-    reason: string;
-    supplyDate: string;
-    isActive: boolean;
+    reason: string | null;
+    supplyDate: number;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface Sale {
@@ -54,16 +60,16 @@ export interface Sale {
     userId: string;
     customerId: string;
     totalAmount: number;
-    isActive: boolean;
+    paymentMethod: 'cash' | 'transfer' | 'credit';
     _deleted: boolean;
-    isPartOfDebt: boolean;
     SRIStatus: 'pending' | 'uploaded' | 'rejected' | 'accepted';
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface SaleDetail {
-    saleDetailId?: string;
+    id: string;
     saleId: string;
     productId: string;
     quantity: number;
@@ -72,15 +78,20 @@ export interface SaleDetail {
     taxAmount: number;
     lineTotal: number;
     _deleted: boolean;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface Debt {
     debtId: string;
     customerId: string;
+    saleId: string | null;
     amount: number;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface DebtPayment {
@@ -88,65 +99,86 @@ export interface DebtPayment {
     debtId: string;
     userId: string;
     amountPaid: number;
-    paymentDate: string;
+    paymentDate: number;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
 export interface Customer {
     customerId: string;
     fullname: string;
-    phone: string | undefined;
-    email: string | undefined;
-    address: string | undefined;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
     allowCredit: boolean;
     creditLimit: number; // Valor en centavos
-    isActive: boolean;
     _deleted: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
-export interface Telemetry {
+export interface StockMovement {
     id: string;
-    timestamp: number;
-    type: string;
-    data: any;
-    isSynced: boolean;
+    productId: string;
+    delta: number; // positivo = entrada, negativo = salida
+    reason: string;
+    referenceId: string | null;
+    referenceType: 'sale' | 'supplying' | 'adjustment' | null;
+    _deleted: boolean;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
-export interface SystemHealth {
+export interface TaxRate {
     id: string;
-    last_heartbeat: number;
-    last_failure_at?: number;
-    total_uptime: number;
-    total_crashes: number;
-    current_status: string;
-    integrity_status?: string;
+    rate: number; // 0.15 = 15%
+    effectiveFrom: number; // Unix ms
+    _deleted: boolean;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
 }
 
-// Tipos para el sistema de ventas
+export interface BankAccount {
+    id: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+    _deleted: boolean;
+    createdAt: number;
+    updatedAt: number;
+    synced: number;
+}
+
+// ============================================
+// TIPOS DE UI / DOMINIO (no son tablas directas)
+// ============================================
+
 export interface SaleItem {
     productId: string;
-    code: string | undefined;
+    code: string | null;
     name: string;
     unitPrice: number;
     quantity: number;
     totalPrice: number;
     allowDecimalQuantity: boolean;
-    isTaxable: boolean; // Si el producto grava IVA
-    combosApplied?: ComboBreakdown[]; // Información de combos aplicados
+    isTaxable: boolean;
+    combosApplied?: ComboBreakdown[];
 }
 
 export interface ComboBreakdown {
     comboQuantity: number;
     comboPrice: number;
-    combosUsed: number; // Cuántas veces se aplicó este combo
+    combosUsed: number;
 }
 
 export interface SaleSummary {
     subtotal: number;
-    tax: number; // 15% IVA
+    tax: number;
     total: number;
+    taxRate: number; // 0.15 = 15%
 }

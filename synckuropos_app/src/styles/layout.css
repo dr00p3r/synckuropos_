@@ -1,9 +1,9 @@
 :root {
     --sidebar-width: 0;
-    --sidebar-bg: #2A423E;
+    --sidebar-bg: var(--color-brand);
     --sidebar-hover: rgba(255, 255, 255, 0.1);
     --sidebar-active: rgba(84, 119, 113, 0.5);
-    --text-color-sidebar: #F0EFE7;
+    --text-color-sidebar: var(--color-brand-light);
 }
 
 /* En pantallas medianas y grandes (768px+), activar el sidebar */

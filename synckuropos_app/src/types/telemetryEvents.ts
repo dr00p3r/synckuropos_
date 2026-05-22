@@ -1,27 +1,2 @@
-export const TelemetryEvents = {
-    // Financial Integrity
-    FINANCIAL_INTEGRITY_CHECK: 'FINANCIAL_INTEGRITY_CHECK',
-
-    // Reliability: Sync & Network
-    NETWORK_STATUS_CHANGE: 'NETWORK_STATUS_CHANGE',
-    SYNC_PERFORMANCE: 'SYNC_PERFORMANCE',
-
-    // Performance
-    PERF_SCAN_LATENCY: 'PERF_SCAN_LATENCY',
-    PERF_SEARCH_LATENCY: 'PERF_SEARCH_LATENCY',
-    PERF_WRITE_LATENCY: 'PERF_WRITE_LATENCY',
-
-    // Usability
-    UX_INTERACTION_METRICS: 'UX_INTERACTION_METRICS',
-    UX_FORM_BLOCK: 'UX_FORM_BLOCK',
-
-    // Security
-    AUTH_FAILURE: 'AUTH_FAILURE',
-    DB_ENCRYPTION_STATUS: 'DB_ENCRYPTION_STATUS',
-
-    // Task Metrics
-    TASK_INIT: 'TASK_INIT',
-    TASK_COMPLETION: 'TASK_COMPLETION',
-    TASK_DURATION: 'TASK_DURATION',
-    APP_START: 'APP_START'
-} as const;
+// Stub: telemetry fue eliminado. Constantes mantenidas para compatibilidad temporal.
+export const TelemetryEvents = {} as Record<string, string>;

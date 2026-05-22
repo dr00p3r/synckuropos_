@@ -3,6 +3,38 @@
  * Configurado para Ecuador (es-EC) con USD
  */
 
+const CURRENCY_FORMATTER = new Intl.NumberFormat('es-EC', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const DATE_FORMATTER = new Intl.DateTimeFormat('es-EC', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+
+const QTY_FORMATTER = new Intl.NumberFormat('es-EC', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+const PERCENT_FORMATTER = new Intl.NumberFormat('es-EC', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+function getPercentFormatter(decimals: number) {
+  return new Intl.NumberFormat('es-EC', {
+    style: 'percent',
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
 /**
  * Formatea un número como moneda USD para Ecuador
  * @param amount Cantidad en centavos
@@ -11,13 +43,7 @@
 export const formatCurrency = (amount: number): string => {
   // Convertir de centavos a dólares
   const dollars = amount / 100;
-
-  return new Intl.NumberFormat('es-EC', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(dollars);
+  return CURRENCY_FORMATTER.format(dollars);
 };
 
 /**
@@ -32,14 +58,16 @@ export const formatDate = (
 ): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
-  const defaultOptions: Intl.DateTimeFormatOptions = {
+  if (Object.keys(options).length === 0) {
+    return DATE_FORMATTER.format(dateObj);
+  }
+
+  return new Intl.DateTimeFormat('es-EC', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     ...options
-  };
-
-  return new Intl.DateTimeFormat('es-EC', defaultOptions).format(dateObj);
+  }).format(dateObj);
 };
 
 /**
@@ -80,13 +108,15 @@ export const formatQty = (
   quantity: number,
   options: Intl.NumberFormatOptions = {}
 ): string => {
-  const defaultOptions: Intl.NumberFormatOptions = {
+  if (Object.keys(options).length === 0) {
+    return QTY_FORMATTER.format(quantity);
+  }
+
+  return new Intl.NumberFormat('es-EC', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
     ...options
-  };
-
-  return new Intl.NumberFormat('es-EC', defaultOptions).format(quantity);
+  }).format(quantity);
 };
 
 /**
@@ -95,12 +125,11 @@ export const formatQty = (
  * @param decimals Número de decimales a mostrar
  * @returns String de porcentaje formateado
  */
-export const formatPercentage = (value: number, decimals: number = 1): string => {
-  return new Intl.NumberFormat('es-EC', {
-    style: 'percent',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value);
+export const formatPercentage = (value: number, decimals = 1): string => {
+  if (decimals === 1) {
+    return PERCENT_FORMATTER.format(value);
+  }
+  return getPercentFormatter(decimals).format(value);
 };
 
 /**

@@ -1,19 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputSwitch } from 'primereact/inputswitch';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import type { Product } from '@/types/types';
+import { Button } from 'primereact/button';
+import type { ProductWithStock } from '../hooks/useInventory';
 import { formatCurrency } from '../../../utils/formatters';
+import { StatusAction } from '@/components/common/StatusAction';
+import { getRowClassName } from '@/utils/tableUtils';
+import { PageCard } from '@/components/common/PageCard';
 
 interface InventoryTableProps {
-    products: Product[];
+    products: ProductWithStock[];
     loading: boolean;
-    onEdit: (product: Product) => void;
-    onToggleStatus: (product: Product) => void;
+    onEdit: (product: ProductWithStock) => void;
+    onToggleStatus: (product: ProductWithStock) => void;
     onCreate: () => void;
 }
 
@@ -23,36 +26,29 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
     const [globalFilter, setGlobalFilter] = useState('');
     const [showInactive, setShowInactive] = useState(false);
 
-    // --- LOGICA DE FILTRO ---
     const visibleProducts = useMemo(() => {
         let filtered = products;
         if (!showInactive) {
-            filtered = filtered.filter(p => p.isActive);
+            filtered = filtered.filter(p => !p._deleted);
         }
         return filtered;
     }, [products, showInactive]);
 
-    // --- ESTILOS DE FILA (Feedback Visual) ---
-    const rowClassName = (data: Product) => {
-        return !data.isActive ? 'surface-100 text-500 font-italic' : '';
-    };
-
-    // --- TEMPLATES ---
-    const nameTemplate = (rowData: Product) => {
+    const nameTemplate = (rowData: ProductWithStock) => {
         return (
             <div className="flex align-items-center gap-2">
-                {!rowData.isActive && <i className="pi pi-ban text-xs" title="Inactivo"></i>}
+                {rowData._deleted && <i className="pi pi-ban text-xs" title="Inactivo"></i>}
                 <span className="font-medium">{rowData.name}</span>
             </div>
         );
     };
 
-    const priceTemplate = (rowData: Product) => {
+    const priceTemplate = (rowData: ProductWithStock) => {
         return formatCurrency(rowData.basePrice);
     };
 
-    const stockTemplate = (rowData: Product) => {
-        if (!rowData.isActive) return <span>{rowData.stock}</span>;
+    const stockTemplate = (rowData: ProductWithStock) => {
+        if (rowData._deleted) return <span>{rowData.stock}</span>;
 
         let textColor = 'text-900';
         if (rowData.stock <= 5) textColor = 'text-red-500 font-bold';
@@ -61,32 +57,17 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
         return <span className={textColor}>{rowData.stock}</span>;
     };
 
-    const actionTemplate = (rowData: Product) => (
-        <div className="flex gap-2 justify-content-end">
-            <Button 
-                icon="pi pi-pencil" 
-                rounded 
-                text 
-                severity="info" 
-                onClick={() => onEdit(rowData)} 
-                tooltip="Editar" 
-            />
-            <Button 
-                icon={rowData.isActive ? "pi pi-eye-slash" : "pi pi-check-circle"} 
-                rounded 
-                text 
-                severity={rowData.isActive ? "danger" : "success"} 
-                onClick={() => onToggleStatus(rowData)} 
-                tooltip={rowData.isActive ? "Desactivar" : "Reactivar"}
-            />
-        </div>
+    const actionTemplate = (rowData: ProductWithStock) => (
+        <StatusAction
+            onEdit={() => onEdit(rowData)}
+            onToggleStatus={() => onToggleStatus(rowData)}
+            isActive={!rowData._deleted}
+        />
     );
 
-    // --- HEADER ---
     const header = (
         <div className="flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="flex align-items-center gap-3 flex-grow-1">
-                
                 <IconField iconPosition="left">
                     <InputIcon className="pi pi-search" />
                     <InputText 
@@ -109,12 +90,12 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                 </div>
             </div>
 
-            <Button label="Nuevo" icon="pi pi-plus" onClick={onCreate} />
+            <Button label="Nuevo Producto" icon="pi pi-plus" rounded onClick={onCreate} />
         </div>
     );
 
     return (
-        <div className="card shadow-1 p-3 bg-white border-round-xl h-full flex flex-column">
+        <PageCard shadow="1" variant="white" padding="1" className="h-full flex flex-column">
             <DataTable 
                 value={visibleProducts} 
                 paginator 
@@ -126,9 +107,10 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                 header={header}
                 loading={loading}
                 emptyMessage="No se encontraron productos."
-                className="p-datatable-sm flex-grow-1"
+                className="flex-grow-1"
+                size="small"
                 stripedRows
-                rowClassName={rowClassName}
+                rowClassName={getRowClassName}
                 scrollable
                 scrollHeight="flex"
             >
@@ -138,6 +120,6 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({
                 <Column field="stock" header="Stock" body={stockTemplate} sortable style={{ minWidth: '80px' }} />
                 <Column body={actionTemplate} exportable={false} style={{ minWidth: '8rem', textAlign: 'right' }} />
             </DataTable>
-        </div>
+        </PageCard>
     );
 };

@@ -61,7 +61,7 @@ export const ComboManager: React.FC<ComboManagerProps> = ({ productId, allowDeci
                 </div>
                 <div className="formgrid grid">
                     <div className="field col-5">
-                        <label className="text-sm font-bold ml-1">Cantidad</label>
+                        <label className="text-sm font-semibold ml-1">Cantidad</label>
                         <InputNumber
                             value={qty}
                             onValueChange={(e) => setQty(e.value ?? null)}
@@ -79,13 +79,13 @@ export const ComboManager: React.FC<ComboManagerProps> = ({ productId, allowDeci
                         />
                     </div>
                     <div className="field col-5">
-                        <label className="text-sm font-bold ml-1">Precio ($)</label>
+                        <label className="text-sm font-semibold ml-1">Precio ($)</label>
                         <InputNumber
                             value={price}
                             onValueChange={(e) => setPrice(e.value ?? null)}
                             mode="currency"
                             currency="USD"
-                            locale="en-US"
+                            locale="es-EC"
                             placeholder="$0.00"
                             className="w-full"
                             inputClassName="w-full"

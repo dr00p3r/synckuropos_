@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { useDatabase } from './useDatabase';
 import { useToast } from './useToast';
 import { productRepository } from '@/features/inventory/services/productRepository';
-import type { SaleItem, Product, ComboProduct, ComboBreakdown, SaleSummary } from '@/types/types';
+import type { SaleItem, Product, ComboProduct, ComboBreakdown, SaleSummary, TaxRate } from '@/types/types';
+import { and, eq, lte, desc } from 'drizzle-orm';
+import * as schema from '@/db/schema';
 
 interface CartContextType {
     saleItems: SaleItem[];
@@ -12,6 +14,7 @@ interface CartContextType {
     updateQuantity: (productId: string, quantity: number) => Promise<void>;
     clearCart: () => void;
     calculateSummary: () => SaleSummary;
+    refreshTaxRate: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -57,17 +60,53 @@ const calculatePriceWithCombos = (
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
     const [saleStartTime, setSaleStartTime] = useState<number | null>(null);
+    const [taxRate, setTaxRate] = useState<number>(0.15);
+    const combosCache = useRef<Map<string, ComboProduct[]>>(new Map());
     const db = useDatabase();
     const toast = useToast();
-    const TAX_RATE = 0.15;
+
+    const loadCombos = useCallback(async () => {
+        if (!db) return;
+        try {
+            combosCache.current = await productRepository.getAllActiveCombos(db);
+        } catch (error) {
+            console.error('Error loading combos:', error);
+        }
+    }, [db]);
+
+    const getCombos = useCallback((productId: string): ComboProduct[] => {
+        return combosCache.current.get(productId) ?? [];
+    }, []);
+
+    const refreshTaxRate = useCallback(async () => {
+        try {
+            const rows = await db.select().from(schema.taxRates)
+                .where(and(eq(schema.taxRates._deleted, false), lte(schema.taxRates.effectiveFrom, Date.now())))
+                .orderBy(desc(schema.taxRates.effectiveFrom))
+                .limit(1);
+            if (rows.length > 0) {
+                setTaxRate((rows[0] as TaxRate).rate);
+            }
+        } catch (error) {
+            console.error('Error loading tax rate:', error);
+        }
+    }, [db]);
+
+    useEffect(() => {
+        if (db) {
+            refreshTaxRate();
+            loadCombos();
+        }
+    }, [db, refreshTaxRate, loadCombos]);
 
     const addToCart = async (product: Product) => {
         try {
             if (saleItems.length === 0) {
                 setSaleStartTime(performance.now());
+                await refreshTaxRate();
             }
 
-            const combos = await productRepository.getActiveCombosByProduct(db, product.productId);
+            const combos = getCombos(product.productId);
 
             setSaleItems(prevItems => {
                 const existingItemIndex = prevItems.findIndex(item => item.productId === product.productId);
@@ -119,14 +158,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const updateQuantity = async (productId: string, quantity: number) => {
+    const updateQuantity = (productId: string, quantity: number) => {
         if (quantity <= 0) {
             removeFromCart(productId);
             return;
         }
 
         try {
-            const combos = await productRepository.getActiveCombosByProduct(db, productId);
+            const combos = getCombos(productId);
 
             setSaleItems(prevItems => {
                 const index = prevItems.findIndex(item => item.productId === productId);
@@ -170,18 +209,24 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSaleStartTime(null);
     };
 
-    const calculateSummary = (): SaleSummary => {
-        const subtotal = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const summary = useMemo((): SaleSummary => {
+        let subtotal = 0;
+        for (const item of saleItems) {
+            if (item.isTaxable) {
+                subtotal += Math.round(item.totalPrice / (1 + taxRate));
+            } else {
+                subtotal += item.totalPrice;
+            }
+        }
+        const total = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const tax = total - subtotal;
 
-        const taxableAmount = saleItems
-            .filter(item => item.isTaxable)
-            .reduce((sum, item) => sum + item.totalPrice, 0);
+        return { subtotal, tax, total, taxRate };
+    }, [saleItems, taxRate]);
 
-        const tax = taxableAmount * TAX_RATE;
-        const total = subtotal + tax;
-
-        return { subtotal, tax, total };
-    };
+    const calculateSummary = useCallback((): SaleSummary => {
+        return summary;
+    }, [summary]);
 
     return (
         <CartContext.Provider value={{
@@ -191,7 +236,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             removeFromCart,
             updateQuantity,
             clearCart,
-            calculateSummary
+            calculateSummary,
+            refreshTaxRate
         }}>
             {children}
         </CartContext.Provider>

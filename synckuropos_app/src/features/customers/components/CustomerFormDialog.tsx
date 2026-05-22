@@ -11,6 +11,7 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { Tag } from 'primereact/tag';
 import { useCustomerForm } from '../hooks/useCustomerForm';
 import { formatCurrency } from '@/utils/formatters';
+import { tabHeaderTemplate } from '@/utils/tabUtils';
 import type { CustomerWithDebt } from '../services/customerRepository';
 
 interface CustomerFormDialogProps {
@@ -42,14 +43,6 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
         canShowPaymentsTab
     } = useCustomerForm({ visible, customerToEdit, onSave, onHide });
 
-    // Template para headers de tabs
-    const tabHeaderTemplate = (options: any) => (
-        <div className="flex align-items-center gap-2 p-3 cursor-pointer" onClick={options.onClick}>
-            <i className={options.leftIcon} />
-            <span className="font-bold">{options.title}</span>
-        </div>
-    );
-
     return (
         <Dialog
             header={isEditMode ? `Cliente: ${form.fullname}` : "Nuevo Cliente"}
@@ -73,14 +66,13 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                         <div className="flex flex-column gap-4 pt-3">
                             {/* Nombre */}
                             <div className="flex flex-column gap-2">
-                                <label htmlFor="fullname" className="font-bold">
+                                <label htmlFor="fullname" className="font-semibold">
                                     Nombre Completo <span className="text-red-500">*</span>
                                 </label>
                                 <InputText
                                     id="fullname"
                                     value={form.fullname}
                                     onChange={(e) => updateField('fullname', e.target.value)}
-                                    autoFocus
                                     className="w-full"
                                     placeholder="Nombre del cliente"
                                 />
@@ -89,7 +81,7 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                             {/* Teléfono y Email */}
                             <div className="formgrid grid">
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label htmlFor="phone" className="font-bold">Teléfono</label>
+                                    <label htmlFor="phone" className="font-semibold">Teléfono</label>
                                     <InputText
                                         id="phone"
                                         value={form.phone}
@@ -100,7 +92,7 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     />
                                 </div>
                                 <div className="field col-6 flex flex-column gap-2">
-                                    <label htmlFor="email" className="font-bold">Email</label>
+                                    <label htmlFor="email" className="font-semibold">Email</label>
                                     <InputText
                                         id="email"
                                         value={form.email}
@@ -114,7 +106,7 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
 
                             {/* Dirección */}
                             <div className="flex flex-column gap-2">
-                                <label htmlFor="address" className="font-bold">Dirección</label>
+                                <label htmlFor="address" className="font-semibold">Dirección</label>
                                 <InputTextarea
                                     id="address"
                                     value={form.address}
@@ -133,16 +125,16 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Checkbox
                                         inputId="allowCredit"
                                         checked={form.allowCredit}
-                                        onChange={(e) => updateField('allowCredit', e.checked || false)}
+                                        onChange={(e) => updateField('allowCredit', e.checked ?? false)}
                                     />
-                                    <label htmlFor="allowCredit" className="font-bold cursor-pointer">
+                                    <label htmlFor="allowCredit" className="font-semibold cursor-pointer">
                                         Permitir Crédito
                                     </label>
                                 </div>
 
                                 {form.allowCredit && (
                                     <div className="flex flex-column gap-2 mt-3">
-                                        <label htmlFor="creditLimit" className="font-bold">
+                                        <label htmlFor="creditLimit" className="font-semibold">
                                             Límite de Crédito ($)
                                         </label>
                                         <InputNumber
@@ -151,7 +143,7 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                             onValueChange={(e) => updateField('creditLimit', e.value ?? null)}
                                             mode="currency"
                                             currency="USD"
-                                            locale="en-US"
+                                            locale="es-EC"
                                             min={0}
                                             className="w-full md:w-6"
                                             inputClassName="w-full"
@@ -205,7 +197,7 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                                 <div className="text-500 mb-2">Crédito Disponible</div>
                                                 <div className="text-3xl font-bold text-blue-500">
                                                     {formatCurrency(
-                                                        Math.max(0, (customerToEdit?.creditLimit || 0) - debtSummary.totalDebt)
+                                                        Math.max(0, (customerToEdit?.creditLimit ?? 0) - debtSummary.totalDebt)
                                                     )}
                                                 </div>
                                             </div>
@@ -226,9 +218,9 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                                             className="surface-card p-3 border-round flex justify-content-between align-items-center"
                                                         >
                                                             <div className="flex flex-column">
-                                                                <span className="text-sm text-500">
-                                                                    {new Date(debt.createdAt).toLocaleDateString()}
-                                                                </span>
+                                                            <span className="text-sm text-500" suppressHydrationWarning>
+                                                                {new Date(debt.createdAt).toLocaleDateString()}
+                                                            </span>
                                                                 <span className="text-sm">
                                                                     Original: {formatCurrency(debt.amount)} |
                                                                     Pagado: {formatCurrency(debt.totalPaid)}
@@ -253,13 +245,14 @@ export const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                                 </div>
                                                 <div className="formgrid grid">
                                                     <div className="field col-12 md:col-8 flex flex-column gap-2">
-                                                        <label className="font-bold">Monto a Abonar ($)</label>
+                                                        <label htmlFor="paymentAmount" className="font-semibold">Monto a Abonar ($)</label>
                                                         <InputNumber
+                                                            id="paymentAmount"
                                                             value={paymentForm.amount}
                                                             onValueChange={(e) => setPaymentAmount(e.value ?? null)}
                                                             mode="currency"
                                                             currency="USD"
-                                                            locale="en-US"
+                                                            locale="es-EC"
                                                             min={0}
                                                             max={debtSummary.totalDebt / 100}
                                                             className="w-full"

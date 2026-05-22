@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSalesLogic } from '../hooks/useSalesLogic';
 import { ProductSearch } from './ProductSearch';
 import { SaleItemsTable } from './SaleItemsTable';
@@ -6,8 +6,7 @@ import { SalesSummary } from './SaleSummary';
 import { PaymentModal } from './PaymentModal';
 import { useTelemetry } from '@/hooks/useTelemetry';
 import { TelemetryEvents } from '@/types/telemetryEvents';
-import { useRef } from 'react';
-
+import { PageCard } from '@/components/common/PageCard';
 
 import { useCart } from '@/hooks';
 
@@ -32,17 +31,6 @@ export const SalesScreen: React.FC = () => {
         };
     }, []);
 
-    const onSaleEnd = () => {
-        logMetric(TelemetryEvents.UX_INTERACTION_METRICS, {
-            mouseClicks: clickCount.current,
-            keyPresses: keyCount.current,
-            saleId: 'transaction_completed'
-        });
-        clickCount.current = 0;
-        keyCount.current = 0;
-        handleSaleCompleted();
-    };
-
     // Usamos el hook de lógica general
     const {
         showPaymentView,
@@ -53,6 +41,17 @@ export const SalesScreen: React.FC = () => {
     } = useSalesLogic();
 
     const summary = calculateSummary();
+
+    const onSaleEnd = () => {
+        logMetric(TelemetryEvents.UX_INTERACTION_METRICS, {
+            mouseClicks: clickCount.current,
+            keyPresses: keyCount.current,
+            saleId: 'transaction_completed'
+        });
+        clickCount.current = 0;
+        keyCount.current = 0;
+        handleSaleCompleted();
+    };
 
     // Atajo de teclado global para cobrar (F9)
     useEffect(() => {
@@ -79,25 +78,22 @@ export const SalesScreen: React.FC = () => {
             </div>
 
             {/* 2. COLUMNA DERECHA (Tabla y Búsqueda) */}
-            <div className="col-12 md:col-8 flex flex-column gap-3 h-full">
-
-                {/* Barra de Búsqueda */}
-                <div className="card shadow-1 bg-white border-round-xl p-3">
+            <div className="col-12 md:col-8 h-full">
+                <PageCard shadow="1" variant="white" padding="1" className="h-full flex flex-column gap-3">
                     <ProductSearch
                         onProductSelect={addProductToSale}
                         hasSaleItems={saleItems.length > 0}
                         onClearSale={clearCart}
                     />
-                </div>
 
-                {/* Tabla de Items */}
-                <div className="flex-grow-1 overflow-hidden">
-                    <SaleItemsTable
-                        items={saleItems}
-                        onUpdateQuantity={(id, qty) => updateQuantity(id, qty)}
-                        onRemoveItem={(id) => removeFromCart(id)}
-                    />
-                </div>
+                    <div className="flex-grow-1 overflow-hidden">
+                        <SaleItemsTable
+                            items={saleItems}
+                            onUpdateQuantity={(id, qty) => updateQuantity(id, qty)}
+                            onRemoveItem={(id) => removeFromCart(id)}
+                        />
+                    </div>
+                </PageCard>
             </div>
 
             <PaymentModal

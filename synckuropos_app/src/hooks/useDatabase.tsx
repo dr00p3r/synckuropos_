@@ -1,45 +1,9 @@
-import {
-  useState,
-  useEffect,
-  useContext,
-  createContext,
-} from 'react';
+import { useState, useEffect, useContext, createContext, useRef, type FC, type ReactNode } from 'react';
+import { initDb, getDb } from '../db/client';
+import { seedInitialData } from '../db/seed';
+import { SyncEngine } from '../db/syncEngine';
 
-import { startReplications } from '../db/replication';
-import { getDb } from '../db';
-
-import type { FC, ReactNode } from 'react';
-import type { RxDatabase, RxCollection } from 'rxdb';
-import type {
-  Product,
-  Customer,
-  Supplying,
-  ComboProduct,
-  Debt,
-  DebtPayment,
-  Sale,
-  SaleDetail,
-  User,
-  Telemetry,
-  SystemHealth
-} from '../types/types';
-
-// Definición del tipo de la base de datos
-export interface AppDatabaseCollections {
-  products: RxCollection<Product>;
-  customers: RxCollection<Customer>;
-  supplyings: RxCollection<Supplying>;
-  comboProducts: RxCollection<ComboProduct>;
-  debts: RxCollection<Debt>;
-  debtPayments: RxCollection<DebtPayment>;
-  sales: RxCollection<Sale>;
-  saleDetails: RxCollection<SaleDetail>;
-  users: RxCollection<User>;
-  telemetry: RxCollection<Telemetry>;
-  system_health: RxCollection<SystemHealth>;
-}
-
-export type AppDatabase = RxDatabase<AppDatabaseCollections>;
+export type AppDatabase = ReturnType<typeof getDb>;
 
 const DbContext = createContext<AppDatabase | null>(null);
 
@@ -49,32 +13,31 @@ interface DatabaseProviderProps {
 
 export const DatabaseProvider: FC<DatabaseProviderProps> = ({ children }) => {
   const [db, setDb] = useState<AppDatabase | null>(null);
+  const engineRef = useRef<SyncEngine | null>(null);
 
   useEffect(() => {
-    const initDb = async () => {
+    const init = async () => {
       try {
-        const dbInstance = await getDb();
+        const dbInstance = await initDb();
+
+        await seedInitialData();
+
+        const engine = new SyncEngine(dbInstance);
+        engine.start();
+        engineRef.current = engine;
+
         setDb(dbInstance);
-
-        // Init sample data
-        const { initializeSampleData } = await import('../utils/sampleData');
-        await initializeSampleData(dbInstance);
-        console.log('Base de datos inicializada correctamente');
-
-        // Log Encryption Status
-        // Checking storage parameters or assuming based on configuration
-        // Since we wrap with keyCompression only, not encryption yet:    
-        //logMetric(TelemetryEvents.DB_ENCRYPTION_STATUS, { isEncrypted: false });
-
-        // Init replications
-        await startReplications(dbInstance);
-
+        console.log('Base de datos SQLite inicializada correctamente');
       } catch (error) {
         console.error('Error inicializando la base de datos:', error);
       }
     };
 
-    initDb();
+    init();
+
+    return () => {
+      engineRef.current?.stop();
+    };
   }, []);
 
   if (!db) {

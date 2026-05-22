@@ -25,7 +25,7 @@ export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items, onUpdateQ
                     <div className="flex gap-1 flex-wrap">
                         {item.combosApplied!.map((combo, idx) => (
                             <Tag
-                                key={idx}
+                                key={`${item.productId}-${combo.comboQuantity}-${idx}`}
                                 icon="pi pi-box"
                                 severity="success"
                                 value={`${combo.combosUsed}×${combo.comboQuantity} = ${formatCurrency(combo.comboPrice * combo.combosUsed)}`}
@@ -82,21 +82,19 @@ export const SaleItemsTable: React.FC<SaleItemsTableProps> = ({ items, onUpdateQ
     };
 
     return (
-        <div className="card shadow-1 border-round-xl overflow-hidden h-full bg-white">
-            <DataTable
-                value={items}
-                scrollable
-                scrollHeight="flex"
-                emptyMessage="Escanea un producto para comenzar..."
-                className="p-datatable-sm"
-                stripedRows
-            >
-                <Column field="name" header="Producto" body={nameBodyTemplate} style={{ minWidth: '200px' }}></Column>
-                <Column field="unitPrice" header="Precio" body={priceBodyTemplate} style={{ width: '100px' }}></Column>
-                <Column field="quantity" header="Cant." body={quantityBodyTemplate} style={{ width: '160px' }}></Column>
-                <Column field="totalPrice" header="Total" body={totalBodyTemplate} style={{ width: '100px', fontWeight: 'bold' }}></Column>
-                <Column body={actionBodyTemplate} style={{ width: '50px' }}></Column>
-            </DataTable>
-        </div>
+        <DataTable
+            value={items}
+            scrollable
+            scrollHeight="flex"
+            emptyMessage="Escanea un producto para comenzar..."
+            className="p-datatable-sm h-full"
+            stripedRows
+        >
+            <Column field="name" header="Producto" body={nameBodyTemplate} style={{ minWidth: '200px' }}></Column>
+            <Column field="unitPrice" header="Precio" body={priceBodyTemplate} style={{ width: '100px' }}></Column>
+            <Column field="quantity" header="Cant." body={quantityBodyTemplate} style={{ width: '160px' }}></Column>
+            <Column field="totalPrice" header="Total" body={totalBodyTemplate} style={{ width: '100px', fontWeight: 'bold' }}></Column>
+            <Column body={actionBodyTemplate} style={{ width: '50px' }}></Column>
+        </DataTable>
     );
 };

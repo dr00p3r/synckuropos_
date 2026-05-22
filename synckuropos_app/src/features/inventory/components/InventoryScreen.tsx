@@ -21,8 +21,7 @@ export const InventoryScreen: React.FC = () => {
     };
 
     return (
-        // h-full + min-h-0 es clave para que flex-grow funcione con scroll interno
-        <div className="h-full min-h-0 flex flex-column">
+        <div className="h-full">
             <InventoryTable 
                 products={products}
                 loading={loading}
@@ -36,6 +35,7 @@ export const InventoryScreen: React.FC = () => {
                 onHide={() => setModalVisible(false)}
                 onSave={loadProducts}
                 productToEdit={selectedProduct}
+                onDuplicateCode={openEdit}
             />
         </div>
     );

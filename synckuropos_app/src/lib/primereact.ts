@@ -10,6 +10,18 @@ export const configurePrimeReact = () => {
         monthNames: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
         monthNamesShort: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
         today: 'Hoy',
-        clear: 'Limpiar'
+        clear: 'Limpiar',
+        accept: 'Sí',
+        reject: 'No',
+        choose: 'Seleccionar',
+        upload: 'Subir',
+        cancel: 'Cancelar',
+        apply: 'Aplicar',
+        matchAll: 'Buscar todo',
+        matchAny: 'Buscar cualquiera',
+        addRule: 'Agregar regla',
+        removeRule: 'Eliminar regla',
+        emptyMessage: 'Sin resultados',
+        emptyFilterMessage: 'Sin resultados'
     });
 };
