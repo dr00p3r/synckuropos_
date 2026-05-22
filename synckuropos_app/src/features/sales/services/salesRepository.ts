@@ -108,6 +108,55 @@ export const salesRepository = {
                     });
                 }
             }
+        } catch (error) {
+            // Rollback compensatorio para reducir riesgo de estados parciales.
+            if (debtPaymentCreatedId) {
+                const paymentDoc = await db.debtPayments.findOne(debtPaymentCreatedId).exec();
+                if (paymentDoc) {
+                    await paymentDoc.update({ $set: { _deleted: true, updatedAt: now } });
+                }
+            }
+
+            if (debtCreatedId) {
+                const debtDoc = await db.debts.findOne(debtCreatedId).exec();
+                if (debtDoc) {
+                    await debtDoc.update({ $set: { _deleted: true, updatedAt: now } });
+                }
+            }
+
+            if (saleInserted) {
+                const saleDetailDocs = await db.saleDetails.find({
+                    selector: { saleId: sale.saleId, _deleted: false }
+                }).exec();
+
+                for (const doc of saleDetailDocs) {
+                    await doc.update({ $set: { _deleted: true } });
+                }
+
+                const saleDoc = await db.sales.findOne({ selector: { saleId: sale.saleId } }).exec();
+                if (saleDoc) {
+                    await saleDoc.update({
+                        $set: {
+                            _deleted: true,
+                            isActive: false,
+                            updatedAt: now
+                        }
+                    });
+                }
+            }
+
+            if (stockUpdated) {
+                for (const snapshot of productSnapshots.values()) {
+                    await snapshot.doc.update({
+                        $set: {
+                            stock: snapshot.previousStock,
+                            updatedAt: now
+                        }
+                    });
+                }
+            }
+
+            throw error;
         }
     }
 };
