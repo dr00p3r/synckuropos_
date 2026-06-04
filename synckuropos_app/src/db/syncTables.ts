@@ -19,6 +19,7 @@ export const SYNC_TABLES = [
     { name: 'debts', table: schema.debts },
     { name: 'debt_payments', table: schema.debtPayments },
     { name: 'tax_rates', table: schema.taxRates },
+    { name: 'bank_accounts', table: schema.bankAccounts },
 ] as const;
 
 export type SyncTableName = (typeof SYNC_TABLES)[number]['name'];

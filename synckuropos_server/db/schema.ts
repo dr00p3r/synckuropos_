@@ -128,6 +128,17 @@ export const debtPayments = pgTable('debt_payments', {
     synced: integer('synced').notNull().default(0),
 });
 
+export const bankAccounts = pgTable('bank_accounts', {
+    id: text('id').primaryKey(),
+    bankName: text('bankName').notNull(),
+    accountNumber: text('accountNumber').notNull(),
+    accountHolder: text('accountHolder').notNull(),
+    _deleted: boolean('_deleted').notNull().default(false),
+    createdAt: bigint('createdAt', { mode: 'number' }).notNull(),
+    updatedAt: bigint('updatedAt', { mode: 'number' }).notNull(),
+    synced: integer('synced').notNull().default(0),
+});
+
 export const taxRates = pgTable('tax_rates', {
     id: text('id').primaryKey(),
     rate: real('rate').notNull(),

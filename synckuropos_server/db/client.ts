@@ -68,6 +68,16 @@ export async function ensureServerSchema() {
           )
         ON CONFLICT ("debtId") DO NOTHING`,
         `ALTER TABLE "sales" DROP COLUMN IF EXISTS "isPartOfDebt"`,
+        `CREATE TABLE IF NOT EXISTS "bank_accounts" (
+            "id" text PRIMARY KEY NOT NULL,
+            "bankName" text NOT NULL,
+            "accountNumber" text NOT NULL,
+            "accountHolder" text NOT NULL,
+            "_deleted" boolean DEFAULT false NOT NULL,
+            "createdAt" bigint NOT NULL,
+            "updatedAt" bigint NOT NULL,
+            "synced" integer DEFAULT 0 NOT NULL
+        )`,
     ];
 
     for (const statement of statements) {
