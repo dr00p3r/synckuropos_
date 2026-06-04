@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import syncRoutes from './routes/sync.js';
 import { ensureServerSchema } from './db/client.js';
+import { ensureServerSeed } from './db/seed.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -34,6 +35,7 @@ app.use('/api/sync', syncRoutes);
 // Start server
 try {
     await ensureServerSchema();
+    await ensureServerSeed();
 
     app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);

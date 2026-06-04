@@ -18,6 +18,7 @@ const TABLE_MAP: Record<string, { table: any; pk: any }> = {
     debts: { table: schema.debts, pk: schema.debts.debtId },
     debt_payments: { table: schema.debtPayments, pk: schema.debtPayments.debtPaymentId },
     tax_rates: { table: schema.taxRates, pk: schema.taxRates.id },
+    bank_accounts: { table: schema.bankAccounts, pk: schema.bankAccounts.id },
 };
 
 // GET /api/sync/pull?since={timestamp}&tables=products,customers,...
