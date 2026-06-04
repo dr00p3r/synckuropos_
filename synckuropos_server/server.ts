@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import syncRoutes from './routes/sync.js';
-import { ensureServerSchema } from './db/client.js';
+import { ensureServerSchema, runServerMigrations } from './db/client.js';
 import { ensureServerSeed } from './db/seed.js';
 
 const PORT = process.env.PORT || 3000;
@@ -34,6 +34,7 @@ app.use('/api/sync', syncRoutes);
 
 // Start server
 try {
+    await runServerMigrations();
     await ensureServerSchema();
     await ensureServerSeed();
 

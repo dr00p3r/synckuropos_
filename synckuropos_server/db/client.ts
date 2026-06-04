@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import * as schema from './schema.js';
 
@@ -8,6 +9,12 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool, { schema });
+
+export async function runServerMigrations() {
+    console.log('[Database] Running Drizzle migrations...');
+    await migrate(db, { migrationsFolder: './db/migrations' });
+    console.log('[Database] Drizzle migrations completed.');
+}
 
 export async function ensureServerSchema() {
     const statements = [
@@ -80,7 +87,9 @@ export async function ensureServerSchema() {
         )`,
     ];
 
+    console.log('[Database] Applying compatibility schema patches...');
     for (const statement of statements) {
         await pool.query(statement);
     }
+    console.log('[Database] Compatibility schema patches completed.');
 }

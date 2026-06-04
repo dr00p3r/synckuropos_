@@ -13,6 +13,7 @@ WORKDIR /app
 COPY --from=build /app/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/db/migrations ./db/migrations
 ENV NODE_ENV=production
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
