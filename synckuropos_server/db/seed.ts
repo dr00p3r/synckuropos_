@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
-import { getDb } from './client';
-import * as schema from './schema';
+import { db } from './client.js';
+import * as schema from './schema.js';
 
 export const SEED_IDS = {
     ADMIN_USER: '00000000-0000-0000-0000-000000000001',
@@ -9,8 +9,7 @@ export const SEED_IDS = {
     CONSUMIDOR_FINAL: '9999999999',
 } as const;
 
-export async function seedInitialData() {
-    const db = getDb();
+export async function ensureServerSeed() {
     const now = Date.now();
 
     const passwordHash = await bcrypt.hash('admin123', 10);
@@ -28,15 +27,14 @@ export async function seedInitialData() {
             _deleted: false,
             createdAt: now,
             updatedAt: now,
-            synced: 0,
+            synced: 1,
         });
-        console.log('Seeded initial admin user.');
+        console.log('[Seed] Created admin user.');
     } else if (!existingAdmin.passwordHash) {
         await db.update(schema.users)
             .set({ passwordHash, updatedAt: now })
             .where(eq(schema.users.userId, SEED_IDS.ADMIN_USER));
-
-        console.log('Patched admin user with missing passwordHash.');
+        console.log('[Seed] Patched admin passwordHash.');
     }
 
     const existingFinalRows = await db.select().from(schema.customers)
@@ -46,17 +44,17 @@ export async function seedInitialData() {
         await db.insert(schema.customers).values({
             customerId: SEED_IDS.CONSUMIDOR_FINAL,
             fullname: 'Consumidor Final',
-            phone: undefined,
-            email: undefined,
-            address: undefined,
+            phone: null,
+            email: null,
+            address: null,
             allowCredit: false,
             creditLimit: 0,
             _deleted: false,
             createdAt: now,
             updatedAt: now,
-            synced: 0,
+            synced: 1,
         });
-        console.log('Seeded Consumidor Final.');
+        console.log('[Seed] Created Consumidor Final.');
     }
 
     const existingTaxRates = await db.select().from(schema.taxRates)
@@ -69,8 +67,8 @@ export async function seedInitialData() {
             _deleted: false,
             createdAt: now,
             updatedAt: now,
-            synced: 0,
+            synced: 1,
         });
-        console.log('Seeded initial IVA rate (15%).');
+        console.log('[Seed] Created IVA rate (15%).');
     }
 }
