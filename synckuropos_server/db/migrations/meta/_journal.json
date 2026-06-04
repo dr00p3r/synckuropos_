@@ -15,6 +15,13 @@
       "when": 1777863986366,
       "tag": "0001_sturdy_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780574400000,
+      "tag": "0002_align_credit_sync",
+      "breakpoints": true
     }
   ]
 }

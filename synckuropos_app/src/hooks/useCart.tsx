@@ -101,14 +101,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addToCart = async (product: Product) => {
         try {
-            const existingItem = saleItems.find(item => item.productId === product.productId);
-            const nextQuantity = (existingItem?.quantity || 0) + 1;
-
-            if (nextQuantity > product.stock) {
-                toast.showWarn(`Stock insuficiente para "${product.name}"`);
-                return;
-            }
-
             if (saleItems.length === 0) {
                 setSaleStartTime(performance.now());
                 await refreshTaxRate();
@@ -166,7 +158,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const updateQuantity = (productId: string, quantity: number) => {
+    const updateQuantity = async (productId: string, quantity: number) => {
         if (quantity <= 0) {
             removeFromCart(productId);
             return;
@@ -186,11 +178,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 if (!item.allowDecimalQuantity && finalQuantity % 1 !== 0) {
                     finalQuantity = Math.floor(finalQuantity);
-                }
-
-                if (finalQuantity > product.stock) {
-                    toast.showWarn(`Stock insuficiente para "${item.name}"`);
-                    return prevItems;
                 }
 
                 if (finalQuantity <= 0) {

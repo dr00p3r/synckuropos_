@@ -30,7 +30,6 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
     const { currentUser } = useAuth();
 
     const [createdProductData, setCreatedProductData] = useState<Product | null>(null);
-    const [localProductData, setLocalProductData] = useState<Product | null>(null);
     const activeProduct = productToEdit || createdProductData;
     const isEditMode = !!activeProduct;
     const originalCodeRef = useRef('');
@@ -60,7 +59,6 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
         setAllowDecimal(false);
         setStockForm(INITIAL_STOCK_STATE);
         setCreatedProductData(null);
-        setLocalProductData(null);
         setActiveIndex(0);
         originalCodeRef.current = '';
     }, []);
@@ -72,7 +70,6 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
         setPrice(product.basePrice / 100);
         setIsTaxable(product.isTaxable);
         setAllowDecimal(product.allowDecimalQuantity);
-        setLocalProductData(product);
         setCreatedProductData(null);
         setStockForm(INITIAL_STOCK_STATE);
         setActiveIndex(1);
@@ -147,14 +144,14 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
                     allowDecimalQuantity: allowDecimal
                 });
 
-                setLocalProductData(prev => prev ? {
+                setCreatedProductData(prev => prev ? {
                     ...prev,
                     name,
                     code: trimmedCode,
                     basePrice: Math.round((price || 0) * 100),
                     isTaxable,
                     allowDecimalQuantity: allowDecimal,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: Date.now()
                 } : prev);
 
                 toast.showSuccess('Información actualizada');
@@ -172,7 +169,6 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
                 });
                 toast.showSuccess('Producto creado. Configure el stock.');
                 setCreatedProductData(newProd);
-                setLocalProductData(newProd);
                 setActiveIndex(1);
                 onSave();
             }
@@ -188,19 +184,12 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
         if (!activeProduct || !db) return;
         setLoading(true);
         try {
-            const movedQuantity = stockForm.qtyMove || 0;
             await productRepository.registerStockMovement(db, activeProduct, {
                 quantityToMove: stockForm.qtyMove?.toString() || '0',
                 costPerUnit: stockForm.cost?.toString() || '0',
                 reason: stockForm.reason,
                 newSalePrice: ''
             }, currentUser?.userId || 'unknown');
-
-            setLocalProductData(prev => prev ? {
-                ...prev,
-                stock: Math.max(0, prev.stock + movedQuantity),
-                updatedAt: new Date().toISOString()
-            } : prev);
 
             toast.showSuccess('Stock actualizado');
             setStockForm(INITIAL_STOCK_STATE);

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card } from 'primereact/card';
-import { Button } from 'primereact/button';
 import { SalesDetailView } from './SalesDetailView';
 import { ProfitDetailView } from './ProfitDetailView';
 import { DebtDetailView } from './DebtDetailView';
@@ -12,15 +11,6 @@ export const ReportsScreen: React.FC = () => {
     const [activeReport, setActiveReport] = useState<ReportType>(null);
 
     // Función auxiliar para el título del Header
-    const getHeaderTitle = () => {
-        switch (activeReport) {
-            case 'SALES': return 'Reporte de Ventas';
-            case 'PROFIT': return 'Ganancias y Flujo de Caja';
-            case 'DEBT': return 'Fiado / Deuda';
-            default: return 'Panel de Reportes';
-        }
-    };
-
     const renderDashboard = () => (
         <div className="grid">
             {/* KPI 1: Ventas */}

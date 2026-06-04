@@ -43,8 +43,8 @@ export const sales = pgTable('sales', {
     userId: text('userId').notNull(),
     customerId: text('customerId').notNull(),
     totalAmount: integer('totalAmount').notNull(),
+    paymentMethod: text('paymentMethod', { enum: ['cash', 'transfer', 'credit'] }).notNull().default('cash'),
     _deleted: boolean('_deleted').notNull().default(false),
-    isPartOfDebt: boolean('isPartOfDebt').notNull().default(false),
     SRIStatus: text('SRIStatus', { enum: ['pending', 'uploaded', 'rejected', 'accepted'] }).notNull().default('pending'),
     createdAt: bigint('createdAt', { mode: 'number' }).notNull(),
     updatedAt: bigint('updatedAt', { mode: 'number' }).notNull(),
@@ -108,6 +108,7 @@ export const stockMovements = pgTable('stock_movements', {
 export const debts = pgTable('debts', {
     debtId: text('debtId').primaryKey(),
     customerId: text('customerId').notNull(),
+    saleId: text('saleId'),
     amount: integer('amount').notNull().default(0),
     _deleted: boolean('_deleted').notNull().default(false),
     createdAt: bigint('createdAt', { mode: 'number' }).notNull(),

@@ -1,5 +1,6 @@
 import { eq, and, like, desc } from 'drizzle-orm';
-import type { Product, StockFormData, ComboProduct } from '../types';
+import type { StockFormData } from '../types';
+import type { Product, ComboProduct } from '@/types/types';
 import type { AppDatabase } from '@/hooks/useDatabase';
 import * as schema from '@/db/schema';
 

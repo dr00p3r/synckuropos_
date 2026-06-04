@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import syncRoutes from './routes/sync.js';
+import { ensureServerSchema } from './db/client.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -31,6 +32,13 @@ app.get('/health', (_req, res) => {
 app.use('/api/sync', syncRoutes);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+try {
+    await ensureServerSchema();
+
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+} catch (error) {
+    console.error('Failed to initialize database schema:', error);
+    process.exit(1);
+}

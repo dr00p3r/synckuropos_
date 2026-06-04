@@ -324,6 +324,7 @@ export const customerRepository = {
         const newDebt: Debt = {
             debtId: crypto.randomUUID(),
             customerId,
+            saleId: null,
             amount: amountInCents,
             _deleted: false,
             createdAt: now,

@@ -5,13 +5,11 @@ import * as schema from './schema';
 export type AppDatabase = ReturnType<typeof drizzle<typeof schema>>;
 
 let dbInstance: AppDatabase | null = null;
-let sqlConnection: Database | null = null;
 
 export async function initDb() {
     if (dbInstance) return dbInstance;
 
     const client = await Database.load('sqlite:synckuropos.db');
-    sqlConnection = client;
 
     dbInstance = drizzle(
         async (sql, params, method) => {
@@ -207,6 +205,73 @@ async function runInitialMigrations(client: Database) {
     const migrations = [
         `ALTER TABLE debts ADD COLUMN saleId TEXT`,
         `ALTER TABLE sales ADD COLUMN paymentMethod TEXT NOT NULL DEFAULT 'cash'`,
+        `UPDATE sales SET paymentMethod = 'credit' WHERE isPartOfDebt = 1`,
+        `INSERT OR IGNORE INTO debts (
+            debtId,
+            customerId,
+            saleId,
+            amount,
+            _deleted,
+            createdAt,
+            updatedAt,
+            synced
+        )
+        SELECT
+            'credit-sale-debt-' || s.saleId,
+            s.customerId,
+            s.saleId,
+            s.totalAmount,
+            s._deleted,
+            s.createdAt,
+            s.updatedAt,
+            0
+        FROM sales s
+        WHERE s.isPartOfDebt = 1
+          AND s.customerId <> '9999999999'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM debts d
+              WHERE d.saleId = s.saleId
+                 OR (
+                    d.saleId IS NULL
+                    AND d.customerId = s.customerId
+                    AND d.amount = s.totalAmount
+                    AND d.createdAt = s.createdAt
+                 )
+          )`,
+        `INSERT OR IGNORE INTO debts (
+            debtId,
+            customerId,
+            saleId,
+            amount,
+            _deleted,
+            createdAt,
+            updatedAt,
+            synced
+        )
+        SELECT
+            'credit-sale-debt-' || s.saleId,
+            s.customerId,
+            s.saleId,
+            s.totalAmount,
+            s._deleted,
+            s.createdAt,
+            s.updatedAt,
+            0
+        FROM sales s
+        WHERE s.paymentMethod = 'credit'
+          AND s.customerId <> '9999999999'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM debts d
+              WHERE d.saleId = s.saleId
+                 OR (
+                    d.saleId IS NULL
+                    AND d.customerId = s.customerId
+                    AND d.amount = s.totalAmount
+                    AND d.createdAt = s.createdAt
+                 )
+          )`,
         `CREATE TABLE IF NOT EXISTS bank_accounts (
             id TEXT PRIMARY KEY,
             bankName TEXT NOT NULL,

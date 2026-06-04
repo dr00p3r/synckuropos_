@@ -279,11 +279,10 @@ export const debtReportRepository = {
             totalPaidInRange += entry.paid;
 
             const dayTransactions = transactions.filter(t => {
-                const ref = t.type === 'SALE'
-                    ? debts.find(d => d.debtId === t.id)
-                    : allPayments.find(p => p.debtPaymentId === t.id);
-                if (!ref) return false;
-                const date: number = t.type === 'SALE' ? ref.createdAt as number : ref.paymentDate as number;
+                const date = t.type === 'SALE'
+                    ? debts.find(d => d.debtId === t.id)?.createdAt
+                    : allPayments.find(p => p.debtPaymentId === t.id)?.paymentDate;
+                if (!date) return false;
                 const dayStart = new Date(date);
                 dayStart.setHours(0, 0, 0, 0);
                 return dayStart.getTime() === dayMs;
