@@ -233,11 +233,55 @@ npx jest useAuth       # Single test file
 - Sends changed files to external analysis API
 - Can block PRs with critical vulnerabilities
 
+**deploy.yml** — Deploy to VPS (push to main/dev or manual):
+1. Type-checks the server
+2. Builds Docker image
+3. Pushes to ghcr.io/${{ github.repository }}/server
+4. SSHes into VPS and runs /opt/synckuropos/deploy.sh
+
+Secrets required: VPS_HOST, VPS_USER, VPS_SSH_KEY
+
 ### SonarQube
 
 Config in sonar-project.properties:
 - Coverage report: coverage/lcov.info
 - Excludes: features, layouts, components, assets, config, db, pages, services, workers, lib, styles, types, utils
+
+---
+
+## Deployment (VPS + Cloudflare Tunnel)
+
+### First-time setup (mini PC Fedora)
+
+```bash
+git clone <repo-url> /opt/synckuropos
+cd /opt/synckuropos
+cp .env.example .env  # edit with real secrets
+docker compose up -d postgres   # start DB first
+docker compose up -d server     # then server
+```
+
+### Cloudflare Tunnel (optional)
+```bash
+docker compose --profile tunnel up -d cloudflared
+```
+
+Set CF_TUNNEL_TOKEN in .env from Cloudflare Zero Trust dashboard.
+
+### Architecture
+```
+Git push → GitHub Actions → Build Docker image → Push to ghcr.io
+         → SSH to VPS → /opt/synckuropos/deploy.sh
+         → docker compose pull server → docker compose up -d server
+```
+
+PostgreSQL data persists in Docker volume `pgdata`, survives container restarts.
+
+### Seed Data (deterministic IDs)
+Both client and server seed with the same fixed IDs to avoid duplicates during sync:
+- Admin user: `00000000-0000-0000-0000-000000000001`
+- IVA 15%: `00000000-0000-0000-0000-000000000002`
+- Consumidor Final: `9999999999`
 
 ---
 
@@ -247,8 +291,9 @@ Config in sonar-project.properties:
 2. **Never block sales for negative stock** — expected behavior
 3. **Always generate IDs on client** — use crypto.randomUUID() before insert
 4. **Never trust autoincrement for IDs** — multiple clients generate records offline
-5. **updatedAt always on client** — Date.now() at create/edit time
-6. **Sync must be idempotent** — running pull+push twice must not cause duplicates
+5. **Seed data uses deterministic IDs** — same IDs on client and server to prevent duplicates (see SEED_IDS in seed.ts)
+6. **updatedAt always on client** — Date.now() at create/edit time
+7. **Sync must be idempotent** — running pull+push twice must not cause duplicates
 
 ---
 
@@ -277,3 +322,8 @@ Config in sonar-project.properties:
 | synckuropos_server/server.ts | Express server entry |
 | synckuropos_server/routes/sync.ts | Sync API endpoints |
 | synckuropos_server/db/schema.ts | PostgreSQL table definitions |
+| synckuropos_server/db/seed.ts | Server seed data (same deterministic IDs) |
+| synckuropos_server/Dockerfile | Production Docker image |
+| docker-compose.yml | PostgreSQL + server + optional tunnel |
+| deploy.sh | VPS deployment script |
+| .github/workflows/deploy.yml | CI/CD pipeline |
