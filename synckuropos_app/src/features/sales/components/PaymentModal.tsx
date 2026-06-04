@@ -100,6 +100,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         setPaymentMethod(method);
         if (method === 'cash') {
             setReceivedAmount('');
+        } else if (method === 'credit') {
+            setReceivedAmount('0');
         } else {
             setReceivedAmount(totalDollars.toFixed(2));
         }

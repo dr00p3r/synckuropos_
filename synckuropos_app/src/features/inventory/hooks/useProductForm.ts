@@ -30,6 +30,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
     const { currentUser } = useAuth();
 
     const [createdProductData, setCreatedProductData] = useState<Product | null>(null);
+    const [localProductData, setLocalProductData] = useState<Product | null>(null);
     const activeProduct = productToEdit || createdProductData;
     const isEditMode = !!activeProduct;
     const originalCodeRef = useRef('');
@@ -149,7 +150,7 @@ export const useProductForm = ({ visible, productToEdit, onSave, onHide, onDupli
                 setLocalProductData(prev => prev ? {
                     ...prev,
                     name,
-                    code: normalizedCode,
+                    code: trimmedCode,
                     basePrice: Math.round((price || 0) * 100),
                     isTaxable,
                     allowDecimalQuantity: allowDecimal,

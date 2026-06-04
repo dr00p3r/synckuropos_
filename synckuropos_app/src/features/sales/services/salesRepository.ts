@@ -1,5 +1,6 @@
 import type { SaleItem, SaleSummary, Customer } from '@/types/types';
 import type { AppDatabase } from '@/hooks/useDatabase';
+import { eq } from 'drizzle-orm';
 import * as schema from '@/db/schema';
 
 interface CreateSaleParams {
@@ -24,137 +25,129 @@ export const salesRepository = {
         const taxRate = summary.taxRate;
         const now = Date.now();
 
-        // 1. Crear Cabecera de Venta
         const saleId = crypto.randomUUID();
-        await db.insert(schema.sales).values({
-            saleId,
-            userId,
-            customerId: customer?.customerId ?? '9999999999',
-            totalAmount: Math.round(summary.total),
-            paymentMethod,
-            _deleted: false,
-            SRIStatus: 'pending',
-            createdAt: now,
-            updatedAt: now,
-            synced: 0
-        });
+        const saleItemIds: string[] = [];
+        const stockMovementIds: string[] = [];
+        let debtId: string | null = null;
+        let debtPaymentId: string | null = null;
 
-        // 2. Crear Detalles + Stock Movements
-        for (const item of saleItems) {
-            const baseAmount = item.isTaxable ? Math.round(item.totalPrice / (1 + taxRate)) : item.totalPrice;
-            const taxAmount = item.isTaxable ? (item.totalPrice - baseAmount) : 0;
-            const saleItemId = crypto.randomUUID();
+        try {
+            // 1. Crear Cabecera de Venta
+            await db.insert(schema.sales).values({
+                saleId,
+                userId,
+                customerId: customer?.customerId ?? '9999999999',
+                totalAmount: Math.round(summary.total),
+                paymentMethod,
+                _deleted: false,
+                SRIStatus: 'pending',
+                createdAt: now,
+                updatedAt: now,
+                synced: 0
+            });
 
-            await Promise.all([
-                db.insert(schema.saleItems).values({
-                    id: saleItemId,
-                    saleId,
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    subtotal: baseAmount,
-                    taxAmount,
-                    lineTotal: item.totalPrice,
-                    _deleted: false,
-                    createdAt: now,
-                    updatedAt: now,
-                    synced: 0
-                }),
-                db.insert(schema.stockMovements).values({
-                    id: crypto.randomUUID(),
-                    productId: item.productId,
-                    delta: -item.quantity,
-                    reason: 'Venta',
-                    referenceId: saleId,
-                    referenceType: 'sale',
-                    _deleted: false,
-                    createdAt: now,
-                    updatedAt: now,
-                    synced: 0
-                })
-            ]);
-        }
+            // 2. Crear Detalles + Stock Movements
+            for (const item of saleItems) {
+                const baseAmount = item.isTaxable ? Math.round(item.totalPrice / (1 + taxRate)) : item.totalPrice;
+                const taxAmount = item.isTaxable ? (item.totalPrice - baseAmount) : 0;
+                const saleItemId = crypto.randomUUID();
+                const stockMovementId = crypto.randomUUID();
+                saleItemIds.push(saleItemId);
+                stockMovementIds.push(stockMovementId);
 
-        // 3. Manejo de Créditos y Deudas
-        if (paymentMethod === 'credit' && customer) {
-            const totalSaleCents = Math.round(summary.total);
-            const debtAmount = totalSaleCents - receivedAmount;
+                await Promise.all([
+                    db.insert(schema.saleItems).values({
+                        id: saleItemId,
+                        saleId,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        subtotal: baseAmount,
+                        taxAmount,
+                        lineTotal: item.totalPrice,
+                        _deleted: false,
+                        createdAt: now,
+                        updatedAt: now,
+                        synced: 0
+                    }),
+                    db.insert(schema.stockMovements).values({
+                        id: stockMovementId,
+                        productId: item.productId,
+                        delta: -item.quantity,
+                        reason: 'Venta',
+                        referenceId: saleId,
+                        referenceType: 'sale',
+                        _deleted: false,
+                        createdAt: now,
+                        updatedAt: now,
+                        synced: 0
+                    })
+                ]);
+            }
 
-            if (debtAmount > 0) {
-                const debtId = crypto.randomUUID();
-                await db.insert(schema.debts).values({
-                    debtId,
-                    customerId: customer.customerId,
-                    saleId,
-                    amount: debtAmount,
-                    _deleted: false,
-                    createdAt: now,
-                    updatedAt: now,
-                    synced: 0
-                });
+            // 3. Manejo de Créditos y Deudas
+            if (paymentMethod === 'credit' && customer) {
+                const totalSaleCents = Math.round(summary.total);
+                const debtAmount = totalSaleCents - receivedAmount;
 
-                // Registrar el pago parcial si existe
-                if (receivedAmount > 0) {
-                    await db.insert(schema.debtPayments).values({
-                        debtPaymentId: crypto.randomUUID(),
+                if (debtAmount > 0) {
+                    debtId = crypto.randomUUID();
+                    await db.insert(schema.debts).values({
                         debtId,
-                        userId,
-                        amountPaid: receivedAmount,
-                        paymentDate: now,
+                        customerId: customer.customerId,
+                        saleId,
+                        amount: debtAmount,
                         _deleted: false,
                         createdAt: now,
                         updatedAt: now,
                         synced: 0
                     });
+
+                    if (receivedAmount > 0) {
+                        debtPaymentId = crypto.randomUUID();
+                        await db.insert(schema.debtPayments).values({
+                            debtPaymentId,
+                            debtId,
+                            userId,
+                            amountPaid: receivedAmount,
+                            paymentDate: now,
+                            _deleted: false,
+                            createdAt: now,
+                            updatedAt: now,
+                            synced: 0
+                        });
+                    }
                 }
             }
         } catch (error) {
-            // Rollback compensatorio para reducir riesgo de estados parciales.
-            if (debtPaymentCreatedId) {
-                const paymentDoc = await db.debtPayments.findOne(debtPaymentCreatedId).exec();
-                if (paymentDoc) {
-                    await paymentDoc.update({ $set: { _deleted: true, updatedAt: now } });
-                }
+            // Rollback compensatorio: soft-delete en orden inverso
+            if (debtPaymentId) {
+                await db.update(schema.debtPayments)
+                    .set({ _deleted: true, updatedAt: now })
+                    .where(eq(schema.debtPayments.debtPaymentId, debtPaymentId));
             }
 
-            if (debtCreatedId) {
-                const debtDoc = await db.debts.findOne(debtCreatedId).exec();
-                if (debtDoc) {
-                    await debtDoc.update({ $set: { _deleted: true, updatedAt: now } });
-                }
+            if (debtId) {
+                await db.update(schema.debts)
+                    .set({ _deleted: true, updatedAt: now })
+                    .where(eq(schema.debts.debtId, debtId));
             }
 
-            if (saleInserted) {
-                const saleDetailDocs = await db.saleDetails.find({
-                    selector: { saleId: sale.saleId, _deleted: false }
-                }).exec();
-
-                for (const doc of saleDetailDocs) {
-                    await doc.update({ $set: { _deleted: true } });
-                }
-
-                const saleDoc = await db.sales.findOne({ selector: { saleId: sale.saleId } }).exec();
-                if (saleDoc) {
-                    await saleDoc.update({
-                        $set: {
-                            _deleted: true,
-                            isActive: false,
-                            updatedAt: now
-                        }
-                    });
-                }
+            for (const id of stockMovementIds) {
+                await db.update(schema.stockMovements)
+                    .set({ _deleted: true, updatedAt: now })
+                    .where(eq(schema.stockMovements.id, id));
             }
 
-            if (stockUpdated) {
-                for (const snapshot of productSnapshots.values()) {
-                    await snapshot.doc.update({
-                        $set: {
-                            stock: snapshot.previousStock,
-                            updatedAt: now
-                        }
-                    });
-                }
+            for (const id of saleItemIds) {
+                await db.update(schema.saleItems)
+                    .set({ _deleted: true, updatedAt: now })
+                    .where(eq(schema.saleItems.id, id));
             }
+
+            await db.update(schema.sales)
+                .set({ _deleted: true, updatedAt: now })
+                .where(eq(schema.sales.saleId, saleId));
 
             throw error;
         }
